@@ -1,6 +1,9 @@
 import type { Plugin, ToolDefinition } from "@opencode-ai/plugin"
 import { loadNovelConfig } from "./config/load"
 import { createNovelScanTool } from "./tools/novel-scan"
+import { createNovelScaffoldTool } from "./tools/novel-scaffold"
+import { createNovelIndexTool } from "./tools/novel-index"
+import { createNovelImportTool } from "./tools/novel-import"
 
 const NovelPlugin: Plugin = async (ctx) => {
   const { config, errors } = loadNovelConfig(ctx.directory)
@@ -13,6 +16,9 @@ const NovelPlugin: Plugin = async (ctx) => {
 
   const tools: Record<string, ToolDefinition> = {
     novel_scan: createNovelScanTool({ projectRoot: ctx.directory, config }),
+    novel_scaffold: createNovelScaffoldTool({ projectRoot: ctx.directory, config }),
+    novel_index: createNovelIndexTool({ projectRoot: ctx.directory, config }),
+    novel_import: createNovelImportTool({ projectRoot: ctx.directory, config }),
   }
 
   return { tool: tools }

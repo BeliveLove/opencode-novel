@@ -1,44 +1,38 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin"
 import type { NovelConfig } from "../../config/schema"
+import { formatToolMarkdownOutput } from "../../shared/tool-output"
+import { sortDiagnostics } from "../../shared/errors/diagnostics"
+import type { NovelScanArgs, NovelScanResultJson } from "./types"
+import { scanNovelProject } from "./scan"
 
-export function createNovelScanTool(deps: { projectRoot: string; config: NovelConfig }): ToolDefinition {
+export function createNovelScanTool(deps: {
+  projectRoot: string
+  config: NovelConfig
+}): ToolDefinition {
   return tool({
     description:
-      "Scan novel project (skeleton). This will be expanded to parse manuscript frontmatter and build a stable snapshot.",
+      "Scan novel project, parse manuscript frontmatter, and build a stable snapshot for indexing/auditing/export.",
     args: {
       rootDir: tool.schema.string().optional(),
+      manuscriptDir: tool.schema.string().optional(),
+      mode: tool.schema.enum(["full", "incremental"]).optional(),
+      strictMode: tool.schema.boolean().optional(),
+      writeCache: tool.schema.boolean().optional(),
     },
-    async execute(args) {
-      return [
-        "## Summary",
-        `- status: not-implemented`,
-        `- rootDir: ${args.rootDir ?? deps.projectRoot}`,
-        `- manuscriptDir: ${deps.config.manuscriptDir}`,
-        "",
-        "## Result (JSON)",
-        "```json",
-        JSON.stringify(
-          {
-            version: 1,
-            rootDir: args.rootDir ?? deps.projectRoot,
-            manuscriptDir: deps.config.manuscriptDir,
-            diagnostics: [
-              {
-                severity: "info",
-                code: "NOT_IMPLEMENTED",
-                message: "novel_scan is not implemented yet.",
-              },
-            ],
-          },
-          null,
-          2,
-        ),
-        "```",
-        "",
-        "## Diagnostics",
-        "- info NOT_IMPLEMENTED: novel_scan is not implemented yet.",
-        "",
-      ].join("\n")
+    async execute(args: NovelScanArgs) {
+      const { result } = scanNovelProject({ projectRoot: deps.projectRoot, config: deps.config, args })
+      const final: NovelScanResultJson = { ...result, diagnostics: sortDiagnostics(result.diagnostics) }
+
+      return formatToolMarkdownOutput({
+        summaryLines: [
+          `filesScanned: ${final.stats.filesScanned}`,
+          `entities: chapters=${final.stats.entities.chapters}, characters=${final.stats.entities.characters}, threads=${final.stats.entities.threads}`,
+          `durationMs: ${final.stats.durationMs}`,
+        ],
+        resultJson: final,
+        diagnostics: final.diagnostics,
+      })
     },
   })
 }
+
