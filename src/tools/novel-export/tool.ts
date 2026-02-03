@@ -4,10 +4,11 @@ import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths";
-import { normalizeLf, writeTextFile } from "../../shared/fs/write";
+import { ensureDirForFile, normalizeLf, writeTextFile } from "../../shared/fs/write";
 import { buildFrontmatterFile, parseFrontmatter } from "../../shared/markdown/frontmatter";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
 import { loadOrScan } from "../novel-scan/scan";
+import { markdownToDocxBytes } from "./docx";
 import { markdownToHtml, wrapHtmlDocument } from "./render";
 import type {
   NovelChapterOrder,
@@ -46,7 +47,7 @@ export function createNovelExportTool(deps: {
 }): ToolDefinition {
   return tool({
     description:
-      "Export novel by merging chapters into a single MD/HTML file (deterministic ordering).",
+      "Export novel by merging chapters into a single MD/HTML/DOCX file (deterministic ordering).",
     args: {
       rootDir: tool.schema.string().optional(),
       manuscriptDir: tool.schema.string().optional(),
@@ -73,12 +74,12 @@ export function createNovelExportTool(deps: {
       const includeFrontmatter = args.includeFrontmatter ?? deps.config.export.includeFrontmatter;
       const writeFile = args.writeFile ?? true;
 
-      if (format === "epub" || format === "docx") {
+      if (format === "epub") {
         diagnostics.push({
           severity: "error",
           code: "EXPORT_FORMAT_NOT_IMPLEMENTED",
           message: `暂不支持导出格式: ${format}（可后续接入 pandoc 或纯 JS 方案）。`,
-          suggestedFix: "请先使用 md 或 html 导出。",
+          suggestedFix: "请先使用 md / html / docx 导出。",
         });
         const resultJson: NovelExportResultJson = {
           version: 1,
@@ -176,14 +177,14 @@ export function createNovelExportTool(deps: {
 
       const mergedMarkdown = `${mergedMdParts.join("\n\n---\n\n")}\n`;
 
-      const fileExt = format === "html" ? "html" : "md";
+      const fileExt = format === "docx" ? "docx" : format === "html" ? "html" : "md";
       const outputPathAbs = path.join(outputDir, `${slugifyTitle(title)}.${fileExt}`);
       const outputPathRel = toRelativePosixPath(rootDir, outputPathAbs);
 
       if (writeFile) {
         if (format === "md") {
           writeTextFile(outputPathAbs, mergedMarkdown, { mode: "always" });
-        } else {
+        } else if (format === "html") {
           const htmlBody = markdownToHtml(mergedMarkdown);
           const html = wrapHtmlDocument({
             title,
@@ -191,6 +192,10 @@ export function createNovelExportTool(deps: {
             language: deps.config.language,
           });
           writeTextFile(outputPathAbs, html, { mode: "always" });
+        } else {
+          const bytes = await markdownToDocxBytes(mergedMarkdown, { title });
+          ensureDirForFile(outputPathAbs);
+          await Bun.write(outputPathAbs, bytes);
         }
       }
 

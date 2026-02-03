@@ -38,6 +38,5 @@
 
 ## 导出
 
-- `/novel-export <md|html|epub|docx>`：导出（`novel_export`；epub/docx 预留）
+- `/novel-export <md|html|epub|docx>`：导出（`novel_export`；当前支持 md/html/docx，epub 预留）
 - `/novel-snapshot <tag>`：快照（模板说明）
-
