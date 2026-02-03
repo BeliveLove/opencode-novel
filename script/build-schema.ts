@@ -14,7 +14,7 @@ async function main() {
 
   const finalSchema = {
     $schema: "http://json-schema.org/draft-07/schema#",
-    $id: "https://example.invalid/opencode-novel.schema.json",
+    $id: "https://opencode.ai/schema/opencode-novel.schema.json",
     title: "OpenCode Novel Configuration",
     description: "Configuration schema for opencode-novel plugin",
     ...jsonSchema,
@@ -25,4 +25,3 @@ async function main() {
 }
 
 main()
-

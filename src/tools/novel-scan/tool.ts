@@ -1,6 +1,7 @@
 import { tool, type ToolDefinition } from "@opencode-ai/plugin"
+import type { NovelConfig } from "../../config/schema"
 
-export function createNovelScanTool(): ToolDefinition {
+export function createNovelScanTool(deps: { projectRoot: string; config: NovelConfig }): ToolDefinition {
   return tool({
     description:
       "Scan novel project (skeleton). This will be expanded to parse manuscript frontmatter and build a stable snapshot.",
@@ -11,14 +12,16 @@ export function createNovelScanTool(): ToolDefinition {
       return [
         "## Summary",
         `- status: not-implemented`,
-        `- rootDir: ${args.rootDir ?? "(default)"}`,
+        `- rootDir: ${args.rootDir ?? deps.projectRoot}`,
+        `- manuscriptDir: ${deps.config.manuscriptDir}`,
         "",
         "## Result (JSON)",
         "```json",
         JSON.stringify(
           {
             version: 1,
-            rootDir: args.rootDir ?? null,
+            rootDir: args.rootDir ?? deps.projectRoot,
+            manuscriptDir: deps.config.manuscriptDir,
             diagnostics: [
               {
                 severity: "info",
@@ -39,4 +42,3 @@ export function createNovelScanTool(): ToolDefinition {
     },
   })
 }
-
