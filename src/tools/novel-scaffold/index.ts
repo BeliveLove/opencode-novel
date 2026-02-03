@@ -1,3 +1,2 @@
-export { createNovelScaffoldTool } from "./tool"
-export type { NovelScaffoldArgs, NovelScaffoldResultJson } from "./types"
-
+export { createNovelScaffoldTool } from "./tool";
+export type { NovelScaffoldArgs, NovelScaffoldResultJson } from "./types";

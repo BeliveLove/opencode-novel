@@ -12,5 +12,4 @@ export const NOVEL_ORACLE_SKILL = `<skill-instruction>
 ## Notes
 - 不要编造事实；缺信息用 Questions 追问。
 - 建议必须可执行（可落到章节/线程/角色卡/世界观条款）。
-</skill-instruction>`
-
+</skill-instruction>`;

@@ -1,14 +1,15 @@
-import { describe, expect, it } from "bun:test"
-import { existsSync, readFileSync } from "node:fs"
-import path from "node:path"
-import { NovelConfigSchema } from "../../config/schema"
-import { withTempDir, writeFixtureFile, extractResultJson } from "../../../test/utils"
-import { createNovelScanTool } from "./tool"
+import { describe, expect, it } from "bun:test";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { executeTool, extractResultJson, withTempDir, writeFixtureFile } from "../../../test/utils";
+import { NovelConfigSchema } from "../../config/schema";
+import { createNovelScanTool } from "./tool";
+import type { NovelScanArgs, NovelScanResultJson } from "./types";
 
 describe("novel_scan", () => {
   it("parses entities and writes scan cache", async () => {
     await withTempDir(async (rootDir) => {
-      const config = NovelConfigSchema.parse({ projectRoot: rootDir })
+      const config = NovelConfigSchema.parse({ projectRoot: rootDir });
 
       writeFixtureFile(
         rootDir,
@@ -34,7 +35,7 @@ tags: [intro]
 
 正文……
 `,
-      )
+      );
 
       writeFixtureFile(
         rootDir,
@@ -51,7 +52,7 @@ voice:
 
 # 张三
 `,
-      )
+      );
       writeFixtureFile(
         rootDir,
         "manuscript/characters/char-lisi.md",
@@ -62,7 +63,7 @@ name: "李四"
 
 # 李四
 `,
-      )
+      );
       writeFixtureFile(
         rootDir,
         "manuscript/threads/th-001.md",
@@ -79,7 +80,7 @@ closed_in: null
 
 # th-001
 `,
-      )
+      );
       writeFixtureFile(
         rootDir,
         "manuscript/locations/loc-town.md",
@@ -90,21 +91,24 @@ name: "镇口"
 
 # 镇口
 `,
-      )
+      );
 
-      const tool = createNovelScanTool({ projectRoot: rootDir, config })
-      const output = await (tool as any).execute({ rootDir, mode: "incremental", writeCache: true })
-      const json = extractResultJson(String(output)) as any
+      const tool = createNovelScanTool({ projectRoot: rootDir, config });
+      const output = await executeTool(tool, {
+        rootDir,
+        mode: "incremental",
+        writeCache: true,
+      } satisfies NovelScanArgs);
+      const json = extractResultJson(String(output)) as NovelScanResultJson;
 
-      expect(json.version).toBe(1)
-      expect(json.entities.chapters.length).toBe(1)
-      expect(json.entities.characters.length).toBe(2)
-      expect(json.entities.threads.length).toBe(1)
+      expect(json.version).toBe(1);
+      expect(json.entities.chapters.length).toBe(1);
+      expect(json.entities.characters.length).toBe(2);
+      expect(json.entities.threads.length).toBe(1);
 
-      const cachePath = path.join(rootDir, ".opencode", "novel", "cache", "scan.json")
-      expect(existsSync(cachePath)).toBeTrue()
-      expect(readFileSync(cachePath, "utf8")).toContain("\"version\": 1")
-    })
-  })
-})
-
+      const cachePath = path.join(rootDir, ".opencode", "novel", "cache", "scan.json");
+      expect(existsSync(cachePath)).toBeTrue();
+      expect(readFileSync(cachePath, "utf8")).toContain('"version": 1');
+    });
+  });
+});

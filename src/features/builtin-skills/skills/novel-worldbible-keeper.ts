@@ -7,5 +7,4 @@ export const NOVEL_WORLDBIBLE_KEEPER_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（manuscript/bible/world.md / rules.md / glossary.md）
-</skill-instruction>`
-
+</skill-instruction>`;

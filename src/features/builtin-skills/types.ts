@@ -10,17 +10,16 @@ export type BuiltinSkillName =
   | "novel-flaw-finder"
   | "novel-continuation-expert"
   | "novel-polish-expert"
-  | "novel-summary-expert"
+  | "novel-summary-expert";
 
 export type SkillDefinition = {
-  name: string
-  description: string
-  template: string
-  argumentHint?: string
-  agent?: string
-  model?: string
-  subtask?: boolean
-}
+  name: string;
+  description: string;
+  template: string;
+  argumentHint?: string;
+  agent?: string;
+  model?: string;
+  subtask?: boolean;
+};
 
-export type BuiltinSkills = Record<BuiltinSkillName, SkillDefinition>
-
+export type BuiltinSkills = Record<BuiltinSkillName, SkillDefinition>;

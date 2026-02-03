@@ -1,3 +1,2 @@
-export { loadBuiltinSkills } from "./skills"
-export type { BuiltinSkillName, SkillDefinition, BuiltinSkills } from "./types"
-
+export { loadBuiltinSkills } from "./skills";
+export type { BuiltinSkillName, BuiltinSkills, SkillDefinition } from "./types";

@@ -1,14 +1,14 @@
-import { describe, expect, it } from "bun:test"
-import { existsSync, readFileSync } from "node:fs"
-import path from "node:path"
-import { NovelConfigSchema } from "../../config/schema"
-import { withTempDir, writeFixtureFile } from "../../../test/utils"
-import { createNovelApplyCandidatesTool } from "./tool"
+import { describe, expect, it } from "bun:test";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { executeTool, withTempDir, writeFixtureFile } from "../../../test/utils";
+import { NovelConfigSchema } from "../../config/schema";
+import { createNovelApplyCandidatesTool } from "./tool";
 
 describe("novel_apply_candidates", () => {
   it("creates entity files and patches frontmatter (dryRun=false)", async () => {
     await withTempDir(async (rootDir) => {
-      const config = NovelConfigSchema.parse({ projectRoot: rootDir })
+      const config = NovelConfigSchema.parse({ projectRoot: rootDir });
 
       writeFixtureFile(
         rootDir,
@@ -22,9 +22,9 @@ characters: []
 # 第一章
 正文
 `,
-      )
+      );
 
-      const candidatesPath = " .opencode/novel/cache/candidates.json".trim()
+      const candidatesPath = " .opencode/novel/cache/candidates.json".trim();
       writeFixtureFile(
         rootDir,
         candidatesPath,
@@ -46,16 +46,18 @@ characters: []
           null,
           2,
         ),
-      )
+      );
 
-      const tool = createNovelApplyCandidatesTool({ projectRoot: rootDir, config })
-      await (tool as any).execute({ rootDir, candidatesPath, dryRun: false, writeReport: true })
+      const tool = createNovelApplyCandidatesTool({ projectRoot: rootDir, config });
+      await executeTool(tool, { rootDir, candidatesPath, dryRun: false, writeReport: true });
 
-      expect(existsSync(path.join(rootDir, "manuscript", "characters", "char-new.md"))).toBeTrue()
-      const chapter = readFileSync(path.join(rootDir, "manuscript", "chapters", "ch0001.md"), "utf8")
-      expect(chapter).toContain("characters:")
-      expect(chapter).toContain("char-new")
-    })
-  })
-})
-
+      expect(existsSync(path.join(rootDir, "manuscript", "characters", "char-new.md"))).toBeTrue();
+      const chapter = readFileSync(
+        path.join(rootDir, "manuscript", "chapters", "ch0001.md"),
+        "utf8",
+      );
+      expect(chapter).toContain("characters:");
+      expect(chapter).toContain("char-new");
+    });
+  });
+});

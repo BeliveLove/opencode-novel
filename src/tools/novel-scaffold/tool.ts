@@ -1,13 +1,13 @@
-import { tool, type ToolDefinition } from "@opencode-ai/plugin"
-import { resolve } from "node:path"
-import type { NovelConfig } from "../../config/schema"
-import { formatToolMarkdownOutput } from "../../shared/tool-output"
-import { ensureNovelScaffold } from "./scaffold"
-import type { NovelScaffoldArgs, NovelScaffoldResultJson } from "./types"
+import { resolve } from "node:path";
+import { type ToolDefinition, tool } from "@opencode-ai/plugin";
+import type { NovelConfig } from "../../config/schema";
+import { formatToolMarkdownOutput } from "../../shared/tool-output";
+import { ensureNovelScaffold } from "./scaffold";
+import type { NovelScaffoldArgs, NovelScaffoldResultJson } from "./types";
 
 export function createNovelScaffoldTool(deps: {
-  projectRoot: string
-  config: NovelConfig
+  projectRoot: string;
+  config: NovelConfig;
 }): ToolDefinition {
   return tool({
     description:
@@ -21,9 +21,9 @@ export function createNovelScaffoldTool(deps: {
       forceOverwriteTemplates: tool.schema.boolean().optional(),
     },
     async execute(rawArgs: NovelScaffoldArgs) {
-      const startedAt = Date.now()
-      const rootDir = resolve(rawArgs.rootDir ?? deps.projectRoot)
-      const manuscriptDirName = rawArgs.manuscriptDir ?? deps.config.manuscriptDir ?? "manuscript"
+      const startedAt = Date.now();
+      const rootDir = resolve(rawArgs.rootDir ?? deps.projectRoot);
+      const manuscriptDirName = rawArgs.manuscriptDir ?? deps.config.manuscriptDir ?? "manuscript";
 
       const scaffold = ensureNovelScaffold({
         rootDir,
@@ -33,9 +33,9 @@ export function createNovelScaffoldTool(deps: {
         writeConfigJsonc: rawArgs.writeConfigJsonc ?? true,
         writeTemplates: rawArgs.writeTemplates ?? true,
         forceOverwriteTemplates: rawArgs.forceOverwriteTemplates ?? false,
-      })
+      });
 
-      const durationMs = Date.now() - startedAt
+      const durationMs = Date.now() - startedAt;
       const resultJson: NovelScaffoldResultJson = {
         version: 1,
         manuscriptDir: scaffold.manuscriptDir,
@@ -44,7 +44,7 @@ export function createNovelScaffoldTool(deps: {
         skippedExisting: scaffold.skippedExisting,
         configPath: scaffold.configPath,
         diagnostics: scaffold.diagnostics,
-      }
+      };
 
       return formatToolMarkdownOutput({
         summaryLines: [
@@ -55,7 +55,7 @@ export function createNovelScaffoldTool(deps: {
         ],
         resultJson: resultJson,
         diagnostics: scaffold.diagnostics,
-      })
+      });
     },
-  })
+  });
 }

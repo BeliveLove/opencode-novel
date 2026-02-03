@@ -6,5 +6,4 @@ export const NOVEL_STYLE_GUIDE_TEMPLATE = `目标：生成/更新全局写作约
 3) 将建议写入项目级 .opencode/novel.jsonc 的 styleGuide 字段（只改配置，不改正文）
 
 输出要求：
-- 给出可直接复制的 JSONC 片段（styleGuide）。`
-
+- 给出可直接复制的 JSONC 片段（styleGuide）。`;

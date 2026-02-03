@@ -7,5 +7,4 @@ export const NOVEL_POLISH_EXPERT_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2；含 conservative/rewrite 两档）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（默认输出新文件）
-</skill-instruction>`
-
+</skill-instruction>`;

@@ -1,0 +1,5 @@
+pre-push:
+  commands:
+    check:
+      run: bun run check
+

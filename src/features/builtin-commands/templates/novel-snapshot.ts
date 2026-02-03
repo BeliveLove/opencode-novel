@@ -5,5 +5,4 @@ export const NOVEL_SNAPSHOT_TEMPLATE = `目标：冻结阶段（快照）。建�
 2) 将以下文件复制到 manuscript/snapshots/<date>-<tag>.md（或目录）：
    - manuscript/bible/*
    - .opencode/novel/INDEX.md / TIMELINE.md / THREADS_REPORT.md / CONTINUITY_REPORT.md
-3) 输出本次快照包含的文件列表。`
-
+3) 输出本次快照包含的文件列表。`;

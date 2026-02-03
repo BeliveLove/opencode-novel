@@ -1,3 +1,2 @@
-export { createNovelBibleTool } from "./tool"
-export type { NovelBibleArgs, NovelBibleResultJson, BibleRule, GlossaryTerm } from "./types"
-
+export { createNovelBibleTool } from "./tool";
+export type { BibleRule, GlossaryTerm, NovelBibleArgs, NovelBibleResultJson } from "./types";

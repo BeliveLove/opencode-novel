@@ -11,5 +11,4 @@ export const NOVEL_BOOTSTRAP_TEMPLATE = `目标：一键迁移：scaffold → im
 
 最后输出：
 - 本次生成/写入了哪些文件
-- 下一步：/novel-extract-entities → /novel-apply-candidates → /novel-continuity-check`
-
+- 下一步：/novel-extract-entities → /novel-apply-candidates → /novel-continuity-check`;

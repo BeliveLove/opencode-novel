@@ -10,5 +10,4 @@ export const NOVEL_CHARACTER_EXPERT_SKILL = `<skill-instruction>
 
 ## Constraints
 - 不要改章节正文；如需修改，只给“最小改动建议”。
-</skill-instruction>`
-
+</skill-instruction>`;

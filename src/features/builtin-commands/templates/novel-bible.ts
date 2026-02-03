@@ -9,5 +9,4 @@ export const NOVEL_BIBLE_TEMPLATE = `目标：生成/更新 bible（世界观/�
    - manuscript/bible/glossary.md
 4) 调用 tool: novel_bible 生成派生 BIBLE_SUMMARY/GLOSSARY
 
-约束：不改章节正文。`
-
+约束：不改章节正文。`;

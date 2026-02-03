@@ -25,17 +25,16 @@ export type BuiltinCommandName =
   | "novel-foreshadowing-audit"
   | "novel-style-check"
   | "novel-export"
-  | "novel-snapshot"
+  | "novel-snapshot";
 
 export type CommandDefinition = {
-  name: string
-  description?: string
-  template: string
-  agent?: string
-  model?: string
-  subtask?: boolean
-  argumentHint?: string
-}
+  name: string;
+  description?: string;
+  template: string;
+  agent?: string;
+  model?: string;
+  subtask?: boolean;
+  argumentHint?: string;
+};
 
-export type BuiltinCommands = Record<BuiltinCommandName, CommandDefinition>
-
+export type BuiltinCommands = Record<BuiltinCommandName, CommandDefinition>;

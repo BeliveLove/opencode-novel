@@ -1,4 +1,3 @@
-export { createSlashcommandTool } from "./tool"
-export { discoverAllCommands } from "./loader"
-export type { CommandInfo, CommandScope } from "./types"
-
+export { discoverAllCommands } from "./loader";
+export { createSlashcommandTool } from "./tool";
+export type { CommandInfo, CommandScope } from "./types";

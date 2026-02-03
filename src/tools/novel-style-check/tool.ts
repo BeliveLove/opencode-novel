@@ -1,60 +1,67 @@
-import { tool, type ToolDefinition } from "@opencode-ai/plugin"
-import { existsSync, readFileSync } from "node:fs"
-import path from "node:path"
-import type { NovelConfig } from "../../config/schema"
-import type { Diagnostic, DiagnosticEvidence } from "../../shared/errors/diagnostics"
-import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths"
-import { parseFrontmatter } from "../../shared/markdown/frontmatter"
-import { writeTextFile } from "../../shared/fs/write"
-import { formatToolMarkdownOutput } from "../../shared/tool-output"
-import { loadOrScan } from "../novel-scan/scan"
-import type { NovelStyleArgs, NovelStyleResultJson, StyleFinding, NovelStyleScope } from "./types"
-import { renderStyleReportMd } from "./render"
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { type ToolDefinition, tool } from "@opencode-ai/plugin";
+import type { NovelConfig } from "../../config/schema";
+import type { Diagnostic, DiagnosticEvidence } from "../../shared/errors/diagnostics";
+import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths";
+import { writeTextFile } from "../../shared/fs/write";
+import { parseFrontmatter } from "../../shared/markdown/frontmatter";
+import { formatToolMarkdownOutput } from "../../shared/tool-output";
+import { loadOrScan } from "../novel-scan/scan";
+import { renderStyleReportMd } from "./render";
+import type { NovelStyleArgs, NovelStyleResultJson, NovelStyleScope, StyleFinding } from "./types";
 
 function findOccurrences(text: string, needle: string): number[] {
-  const indexes: number[] = []
-  if (!needle) return indexes
-  let fromIndex = 0
+  const indexes: number[] = [];
+  if (!needle) return indexes;
+  let fromIndex = 0;
   while (true) {
-    const idx = text.indexOf(needle, fromIndex)
-    if (idx === -1) break
-    indexes.push(idx)
-    fromIndex = idx + needle.length
+    const idx = text.indexOf(needle, fromIndex);
+    if (idx === -1) break;
+    indexes.push(idx);
+    fromIndex = idx + needle.length;
   }
-  return indexes
+  return indexes;
 }
 
 function excerptAround(text: string, index: number, maxLen: number): string {
-  const start = Math.max(0, index - Math.floor(maxLen / 2))
-  const end = Math.min(text.length, start + maxLen)
-  return text.slice(start, end).replaceAll("\n", " ").trim()
+  const start = Math.max(0, index - Math.floor(maxLen / 2));
+  const end = Math.min(text.length, start + maxLen);
+  return text.slice(start, end).replaceAll("\n", " ").trim();
 }
 
 function buildEvidence(file: string, content: string, needle: string): DiagnosticEvidence {
-  const idx = content.indexOf(needle)
+  const idx = content.indexOf(needle);
   return {
     file,
     excerpt: idx >= 0 ? excerptAround(content, idx, 180) : undefined,
-  }
+  };
 }
 
-function resolveScopeChapters(scanChapters: Array<{ chapter_id: string; path: string; characters?: string[] }>, scope?: NovelStyleScope): Array<{ chapter_id: string; path: string }> {
+function resolveScopeChapters(
+  scanChapters: Array<{ chapter_id: string; path: string; characters?: string[] }>,
+  scope?: NovelStyleScope,
+): Array<{ chapter_id: string; path: string }> {
   if (!scope || scope.kind === "all") {
-    return scanChapters.map((c) => ({ chapter_id: c.chapter_id, path: c.path }))
+    return scanChapters.map((c) => ({ chapter_id: c.chapter_id, path: c.path }));
   }
   if (scope.kind === "chapter") {
-    const found = scanChapters.find((c) => c.chapter_id === scope.chapter_id)
-    return found ? [{ chapter_id: found.chapter_id, path: found.path }] : []
+    const found = scanChapters.find((c) => c.chapter_id === scope.chapter_id);
+    return found ? [{ chapter_id: found.chapter_id, path: found.path }] : [];
   }
-  const targetId = scope.id
+  const targetId = scope.id;
   return scanChapters
     .filter((c) => (c.characters ?? []).includes(targetId))
-    .map((c) => ({ chapter_id: c.chapter_id, path: c.path }))
+    .map((c) => ({ chapter_id: c.chapter_id, path: c.path }));
 }
 
-export function createNovelStyleCheckTool(deps: { projectRoot: string; config: NovelConfig }): ToolDefinition {
+export function createNovelStyleCheckTool(deps: {
+  projectRoot: string;
+  config: NovelConfig;
+}): ToolDefinition {
   return tool({
-    description: "Basic style consistency checks (lexicon avoid/preferred + simple voice statistics).",
+    description:
+      "Basic style consistency checks (lexicon avoid/preferred + simple voice statistics).",
     args: {
       rootDir: tool.schema.string().optional(),
       manuscriptDir: tool.schema.string().optional(),
@@ -62,135 +69,155 @@ export function createNovelStyleCheckTool(deps: { projectRoot: string; config: N
       scope: tool.schema
         .union([
           tool.schema.object({ kind: tool.schema.literal("all") }),
-          tool.schema.object({ kind: tool.schema.literal("chapter"), chapter_id: tool.schema.string() }),
+          tool.schema.object({
+            kind: tool.schema.literal("chapter"),
+            chapter_id: tool.schema.string(),
+          }),
           tool.schema.object({ kind: tool.schema.literal("character"), id: tool.schema.string() }),
         ])
         .optional(),
       writeReport: tool.schema.boolean().optional(),
     },
     async execute(args: NovelStyleArgs) {
-      const startedAt = Date.now()
-      const diagnostics: Diagnostic[] = []
+      const startedAt = Date.now();
+      const diagnostics: Diagnostic[] = [];
 
-      const rootDir = path.resolve(args.rootDir ?? deps.projectRoot)
-      const manuscriptDirName = args.manuscriptDir ?? deps.config.manuscriptDir
+      const rootDir = path.resolve(args.rootDir ?? deps.projectRoot);
+      const manuscriptDirName = args.manuscriptDir ?? deps.config.manuscriptDir;
       const outputDir = path.isAbsolute(args.outputDir ?? "")
         ? (args.outputDir as string)
-        : path.resolve(path.join(rootDir, args.outputDir ?? deps.config.index.outputDir))
-      const writeReport = args.writeReport ?? true
+        : path.resolve(path.join(rootDir, args.outputDir ?? deps.config.index.outputDir));
+      const writeReport = args.writeReport ?? true;
 
       const scan = loadOrScan({
         projectRoot: deps.projectRoot,
         config: deps.config,
         args: { rootDir, manuscriptDir: manuscriptDirName, mode: "incremental", writeCache: true },
-      })
-      diagnostics.push(...scan.diagnostics)
+      });
+      diagnostics.push(...scan.diagnostics);
 
-      const chapters = resolveScopeChapters(scan.entities.chapters, args.scope)
+      const chapters = resolveScopeChapters(scan.entities.chapters, args.scope);
       if (chapters.length === 0) {
         diagnostics.push({
           severity: "warn",
           code: "STYLE_SCOPE_EMPTY",
           message: "scope 未匹配到任何章节。",
-        })
+        });
       }
 
-      const avoidWords = deps.config.styleGuide.lexicon.avoid ?? []
+      const avoidWords = deps.config.styleGuide.lexicon.avoid ?? [];
 
-      const findings: StyleFinding[] = []
+      const findings: StyleFinding[] = [];
 
       for (const chapter of chapters) {
-        const abs = fromRelativePosixPath(rootDir, chapter.path)
-        if (!existsSync(abs)) continue
-        const content = readFileSync(abs, "utf8")
-        const parsed = parseFrontmatter<Record<string, unknown>>(content, { file: chapter.path, strict: false })
-        diagnostics.push(...parsed.diagnostics)
-        const body = parsed.body
+        const abs = fromRelativePosixPath(rootDir, chapter.path);
+        if (!existsSync(abs)) continue;
+        const content = readFileSync(abs, "utf8");
+        const parsed = parseFrontmatter<Record<string, unknown>>(content, {
+          file: chapter.path,
+          strict: false,
+        });
+        diagnostics.push(...parsed.diagnostics);
+        const body = parsed.body;
 
         for (const word of avoidWords) {
-          if (!word) continue
-          const occurrences = findOccurrences(body, word)
-          if (occurrences.length === 0) continue
+          if (!word) continue;
+          const occurrences = findOccurrences(body, word);
+          if (occurrences.length === 0) continue;
           findings.push({
             severity: "warn",
             code: "STYLE_AVOID_WORD",
             message: `命中禁用词: ${word} (count=${occurrences.length})`,
             evidence: [buildEvidence(chapter.path, body, word)],
             suggestedFix: "替换或删除禁用词，或在 styleGuide.lexicon.avoid 中移除该词。",
-          })
+          });
         }
       }
 
       // Voice catchphrases statistics (info)
-      const catchphraseThreshold = 10
+      const catchphraseThreshold = 10;
       for (const character of scan.entities.characters) {
-        const abs = fromRelativePosixPath(rootDir, character.path)
-        if (!existsSync(abs)) continue
-        const content = readFileSync(abs, "utf8")
-        const parsed = parseFrontmatter<Record<string, unknown>>(content, { file: character.path, strict: false })
-        diagnostics.push(...parsed.diagnostics)
-        const voice = parsed.data.voice
-        if (!voice || typeof voice !== "object") continue
-        const rawCatchphrases = (voice as Record<string, unknown>).catchphrases
+        const abs = fromRelativePosixPath(rootDir, character.path);
+        if (!existsSync(abs)) continue;
+        const content = readFileSync(abs, "utf8");
+        const parsed = parseFrontmatter<Record<string, unknown>>(content, {
+          file: character.path,
+          strict: false,
+        });
+        diagnostics.push(...parsed.diagnostics);
+        const voice = parsed.data.voice;
+        if (!voice || typeof voice !== "object") continue;
+        const rawCatchphrases = (voice as Record<string, unknown>).catchphrases;
         const catchphrases = Array.isArray(rawCatchphrases)
           ? rawCatchphrases.filter((x): x is string => typeof x === "string")
-          : []
-        if (catchphrases.length === 0) continue
+          : [];
+        if (catchphrases.length === 0) continue;
 
-        const relatedChapters = scan.entities.chapters.filter((c) => (c.characters ?? []).includes(character.id))
+        const relatedChapters = scan.entities.chapters.filter((c) =>
+          (c.characters ?? []).includes(character.id),
+        );
         const corpus = relatedChapters
           .map((c) => {
-            const absPath = fromRelativePosixPath(rootDir, c.path)
-            if (!existsSync(absPath)) return ""
-            const text = readFileSync(absPath, "utf8")
-            const p = parseFrontmatter<Record<string, unknown>>(text, { file: c.path, strict: false })
-            return p.body
+            const absPath = fromRelativePosixPath(rootDir, c.path);
+            if (!existsSync(absPath)) return "";
+            const text = readFileSync(absPath, "utf8");
+            const p = parseFrontmatter<Record<string, unknown>>(text, {
+              file: c.path,
+              strict: false,
+            });
+            return p.body;
           })
-          .join("\n\n")
+          .join("\n\n");
 
         for (const phrase of catchphrases) {
-          const count = findOccurrences(corpus, phrase).length
+          const count = findOccurrences(corpus, phrase).length;
           if (count === 0 || count > catchphraseThreshold) {
             findings.push({
               severity: "info",
               code: "STYLE_CATCHPHRASE_STATS",
               message: `角色口癖统计异常: ${character.id} "${phrase}" (count=${count})`,
               evidence: [{ file: character.path }],
-              suggestedFix: count === 0 ? "考虑在相关章节加入该口癖，或更新角色卡 voice.catchphrases。" : "考虑减少重复口癖或调整表达方式。",
-            })
+              suggestedFix:
+                count === 0
+                  ? "考虑在相关章节加入该口癖，或更新角色卡 voice.catchphrases。"
+                  : "考虑减少重复口癖或调整表达方式。",
+            });
           }
         }
       }
 
-      findings.sort((a, b) => a.severity.localeCompare(b.severity) || a.code.localeCompare(b.code) || a.message.localeCompare(b.message))
+      findings.sort(
+        (a, b) =>
+          a.severity.localeCompare(b.severity) ||
+          a.code.localeCompare(b.code) ||
+          a.message.localeCompare(b.message),
+      );
 
-      const warns = findings.filter((f) => f.severity === "warn").length
-      const infos = findings.filter((f) => f.severity === "info").length
+      const warns = findings.filter((f) => f.severity === "warn").length;
+      const infos = findings.filter((f) => f.severity === "info").length;
 
-      const reportPathAbs = path.join(outputDir, "STYLE_REPORT.md")
-      const reportPathRel = toRelativePosixPath(rootDir, reportPathAbs)
+      const reportPathAbs = path.join(outputDir, "STYLE_REPORT.md");
+      const reportPathRel = toRelativePosixPath(rootDir, reportPathAbs);
       if (writeReport) {
-        writeTextFile(reportPathAbs, renderStyleReportMd({ findings, stats: { warns, infos } }), { mode: "if-changed" })
+        writeTextFile(reportPathAbs, renderStyleReportMd({ findings, stats: { warns, infos } }), {
+          mode: "if-changed",
+        });
       }
 
-      const durationMs = Date.now() - startedAt
+      const durationMs = Date.now() - startedAt;
       const resultJson: NovelStyleResultJson = {
         version: 1,
         reportPath: writeReport ? reportPathRel : undefined,
         stats: { warns, infos, durationMs },
         findings,
         diagnostics,
-      }
+      };
 
       return formatToolMarkdownOutput({
-        summaryLines: [
-          `warns: ${warns}`,
-          `infos: ${infos}`,
-          `durationMs: ${durationMs}`,
-        ],
+        summaryLines: [`warns: ${warns}`, `infos: ${infos}`, `durationMs: ${durationMs}`],
         resultJson,
         diagnostics,
-      })
+      });
     },
-  })
+  });
 }

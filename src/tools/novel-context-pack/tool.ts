@@ -1,73 +1,84 @@
-import { tool, type ToolDefinition } from "@opencode-ai/plugin"
-import { existsSync, readFileSync } from "node:fs"
-import path from "node:path"
-import type { NovelConfig } from "../../config/schema"
-import type { Diagnostic } from "../../shared/errors/diagnostics"
-import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths"
-import { normalizeLf, writeTextFile } from "../../shared/fs/write"
-import { parseFrontmatter } from "../../shared/markdown/frontmatter"
-import { formatToolMarkdownOutput } from "../../shared/tool-output"
-import { loadOrScan } from "../novel-scan/scan"
-import type { NovelContextPackArgs, NovelContextPackResultJson, NovelContextPackTask } from "./types"
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import { type ToolDefinition, tool } from "@opencode-ai/plugin";
+import type { NovelConfig } from "../../config/schema";
+import type { Diagnostic } from "../../shared/errors/diagnostics";
+import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths";
+import { normalizeLf, writeTextFile } from "../../shared/fs/write";
+import { parseFrontmatter } from "../../shared/markdown/frontmatter";
+import { formatToolMarkdownOutput } from "../../shared/tool-output";
+import { loadOrScan } from "../novel-scan/scan";
+import type {
+  NovelContextPackArgs,
+  NovelContextPackResultJson,
+  NovelContextPackTask,
+} from "./types";
 
 function extractFirstParagraph(markdownBody: string, maxChars: number): string {
-  const text = normalizeLf(markdownBody)
-  const lines = text.split("\n")
-  const paragraphs: string[] = []
-  let current: string[] = []
+  const text = normalizeLf(markdownBody);
+  const lines = text.split("\n");
+  const paragraphs: string[] = [];
+  let current: string[] = [];
   for (const line of lines) {
     if (line.trim().length === 0) {
       if (current.length > 0) {
-        paragraphs.push(current.join("\n").trim())
-        current = []
+        paragraphs.push(current.join("\n").trim());
+        current = [];
       }
-      continue
+      continue;
     }
     if (line.startsWith("#")) {
       // skip headings
       if (current.length > 0) {
-        paragraphs.push(current.join("\n").trim())
-        current = []
+        paragraphs.push(current.join("\n").trim());
+        current = [];
       }
-      continue
+      continue;
     }
-    current.push(line)
+    current.push(line);
     if (current.join("\n").length >= maxChars) {
-      break
+      break;
     }
   }
-  if (current.length > 0) paragraphs.push(current.join("\n").trim())
-  const first = paragraphs.find((p) => p.length > 0) ?? ""
-  return first.length > maxChars ? first.slice(0, maxChars) : first
+  if (current.length > 0) paragraphs.push(current.join("\n").trim());
+  const first = paragraphs.find((p) => p.length > 0) ?? "";
+  return first.length > maxChars ? first.slice(0, maxChars) : first;
 }
 
 function applyRedaction(text: string, patterns: string[], diagnostics: Diagnostic[]): string {
-  let result = text
+  let result = text;
   for (const pattern of patterns) {
     try {
-      const re = new RegExp(pattern, "g")
-      result = result.replace(re, "[REDACTED]")
+      const re = new RegExp(pattern, "g");
+      result = result.replace(re, "[REDACTED]");
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
+      const message = error instanceof Error ? error.message : String(error);
       diagnostics.push({
         severity: "warn",
         code: "CONTEXT_REDACTION_INVALID_PATTERN",
         message: `脱敏正则无效: ${pattern} (${message})`,
-      })
+      });
     }
   }
-  return result
+  return result;
 }
 
-function buildPackPath(rootDir: string, outputDir: string, task: NovelContextPackTask, key: string): string {
-  const fileName = `${task}-${key}.md`
-  return path.join(outputDir, "CONTEXT_PACKS", fileName)
+function buildPackPath(
+  _rootDir: string,
+  outputDir: string,
+  task: NovelContextPackTask,
+  key: string,
+): string {
+  const fileName = `${task}-${key}.md`;
+  return path.join(outputDir, "CONTEXT_PACKS", fileName);
 }
 
-export function createNovelContextPackTool(deps: { projectRoot: string; config: NovelConfig }): ToolDefinition {
+export function createNovelContextPackTool(deps: {
+  projectRoot: string;
+  config: NovelConfig;
+}): ToolDefinition {
   return tool({
-    description:
-      "Create a minimal, explainable context pack for LLM tasks (budgeted by maxChars).",
+    description: "Create a minimal, explainable context pack for LLM tasks (budgeted by maxChars).",
     args: {
       rootDir: tool.schema.string().optional(),
       manuscriptDir: tool.schema.string().optional(),
@@ -92,85 +103,98 @@ export function createNovelContextPackTool(deps: { projectRoot: string; config: 
       writeFile: tool.schema.boolean().optional(),
     },
     async execute(args: NovelContextPackArgs) {
-      const startedAt = Date.now()
-      const diagnostics: Diagnostic[] = []
+      const startedAt = Date.now();
+      const diagnostics: Diagnostic[] = [];
 
-      const rootDir = path.resolve(args.rootDir ?? deps.projectRoot)
-      const manuscriptDirName = args.manuscriptDir ?? deps.config.manuscriptDir
-      const budgetChars = args.budget.maxChars
+      const rootDir = path.resolve(args.rootDir ?? deps.projectRoot);
+      const manuscriptDirName = args.manuscriptDir ?? deps.config.manuscriptDir;
+      const budgetChars = args.budget.maxChars;
       const include = {
         bible: args.include?.bible ?? deps.config.contextPack.include.bible,
         characters: args.include?.characters ?? deps.config.contextPack.include.characters,
         openThreads: args.include?.openThreads ?? deps.config.contextPack.include.openThreads,
         lastChapters: args.include?.lastChapters ?? deps.config.contextPack.include.lastChapters,
-      }
-      const redaction = args.redaction ?? deps.config.contextPack.redaction
-      const writeFile = args.writeFile ?? true
+      };
+      const redaction = args.redaction ?? deps.config.contextPack.redaction;
+      const writeFile = args.writeFile ?? true;
 
       const scan = loadOrScan({
         projectRoot: deps.projectRoot,
         config: deps.config,
         args: { rootDir, manuscriptDir: manuscriptDirName, mode: "incremental", writeCache: true },
-      })
-      diagnostics.push(...scan.diagnostics)
+      });
+      diagnostics.push(...scan.diagnostics);
 
-      const included: Array<{ path: string; reason: string; chars: number }> = []
-      const sections: string[] = []
+      const included: Array<{ path: string; reason: string; chars: number }> = [];
+      const sections: string[] = [];
 
       const outputDir = path.isAbsolute(deps.config.index.outputDir)
         ? deps.config.index.outputDir
-        : path.resolve(path.join(rootDir, deps.config.index.outputDir))
+        : path.resolve(path.join(rootDir, deps.config.index.outputDir));
 
       const addSection = (relPath: string, reason: string, content: string) => {
-        const remaining = budgetChars - sections.join("\n").length
-        if (remaining <= 0) return
-        const truncated = content.length > remaining ? content.slice(0, remaining) : content
-        sections.push(truncated)
-        included.push({ path: relPath, reason, chars: truncated.length })
-      }
+        const remaining = budgetChars - sections.join("\n").length;
+        if (remaining <= 0) return;
+        const truncated = content.length > remaining ? content.slice(0, remaining) : content;
+        sections.push(truncated);
+        included.push({ path: relPath, reason, chars: truncated.length });
+      };
 
-      const chapterKey = args.chapter_id?.trim()
-      const threadKey = args.thread_id?.trim()
+      const chapterKey = args.chapter_id?.trim();
+      const threadKey = args.thread_id?.trim();
 
       if (!chapterKey && !threadKey) {
         diagnostics.push({
           severity: "warn",
           code: "CONTEXT_NO_TARGET",
           message: "未指定 chapter_id 或 thread_id，将按全局最小集打包。",
-        })
+        });
       }
 
       // Bible (prefer derived summary if exists)
       if (include.bible) {
-        const derivedSummaryRel = `${deps.config.index.outputDir}/BIBLE_SUMMARY.md`.replaceAll("\\", "/")
-        const derivedSummaryAbs = path.join(rootDir, derivedSummaryRel.replaceAll("/", path.sep))
+        const derivedSummaryRel = `${deps.config.index.outputDir}/BIBLE_SUMMARY.md`.replaceAll(
+          "\\",
+          "/",
+        );
+        const derivedSummaryAbs = path.join(rootDir, derivedSummaryRel.replaceAll("/", path.sep));
         if (existsSync(derivedSummaryAbs)) {
-          const content = readFileSync(derivedSummaryAbs, "utf8")
-          addSection(derivedSummaryRel, "bible summary (derived)", `## Bible Summary\n\n${content}\n`)
+          const content = readFileSync(derivedSummaryAbs, "utf8");
+          addSection(
+            derivedSummaryRel,
+            "bible summary (derived)",
+            `## Bible Summary\n\n${content}\n`,
+          );
         } else {
-          const worldRel = `${manuscriptDirName}/bible/world.md`
-          const worldAbs = path.join(rootDir, worldRel.replaceAll("/", path.sep))
+          const worldRel = `${manuscriptDirName}/bible/world.md`;
+          const worldAbs = path.join(rootDir, worldRel.replaceAll("/", path.sep));
           if (existsSync(worldAbs)) {
-            const content = readFileSync(worldAbs, "utf8")
-            addSection(worldRel, "bible world.md", `## World Bible\n\n${content.slice(0, 2000)}\n`)
+            const content = readFileSync(worldAbs, "utf8");
+            addSection(worldRel, "bible world.md", `## World Bible\n\n${content.slice(0, 2000)}\n`);
           }
         }
       }
 
-      const chaptersById = [...scan.entities.chapters].sort((a, b) => a.chapter_id.localeCompare(b.chapter_id))
-      const chapterIndex = new Map(chaptersById.map((c, idx) => [c.chapter_id, idx] as const))
+      const chaptersById = [...scan.entities.chapters].sort((a, b) =>
+        a.chapter_id.localeCompare(b.chapter_id),
+      );
+      const chapterIndex = new Map(chaptersById.map((c, idx) => [c.chapter_id, idx] as const));
 
       const includeChapter = (chapterId: string, reason: string) => {
-        const chapter = scan.entities.chapters.find((c) => c.chapter_id === chapterId)
-        if (!chapter) return
-        const abs = fromRelativePosixPath(rootDir, chapter.path)
-        if (!existsSync(abs)) return
-        const content = readFileSync(abs, "utf8")
-        const parsed = parseFrontmatter<Record<string, unknown>>(content, { file: chapter.path, strict: false })
-        diagnostics.push(...parsed.diagnostics)
+        const chapter = scan.entities.chapters.find((c) => c.chapter_id === chapterId);
+        if (!chapter) return;
+        const abs = fromRelativePosixPath(rootDir, chapter.path);
+        if (!existsSync(abs)) return;
+        const content = readFileSync(abs, "utf8");
+        const parsed = parseFrontmatter<Record<string, unknown>>(content, {
+          file: chapter.path,
+          strict: false,
+        });
+        diagnostics.push(...parsed.diagnostics);
 
-        const summary = chapter.summary ?? (typeof parsed.data.summary === "string" ? parsed.data.summary : "")
-        const snippet = extractFirstParagraph(parsed.body, 600)
+        const summary =
+          chapter.summary ?? (typeof parsed.data.summary === "string" ? parsed.data.summary : "");
+        const snippet = extractFirstParagraph(parsed.body, 600);
         const block = [
           `## Chapter ${chapter.chapter_id}: ${chapter.title ?? ""}`.trim(),
           summary ? `**Summary**: ${summary}` : "",
@@ -178,22 +202,25 @@ export function createNovelContextPackTool(deps: { projectRoot: string; config: 
           "",
         ]
           .filter(Boolean)
-          .join("\n\n")
-        addSection(chapter.path, reason, block)
-      }
+          .join("\n\n");
+        addSection(chapter.path, reason, block);
+      };
 
       const includeCharacter = (characterId: string, reason: string) => {
-        const character = scan.entities.characters.find((c) => c.id === characterId)
-        if (!character) return
-        const abs = fromRelativePosixPath(rootDir, character.path)
-        if (!existsSync(abs)) return
-        const content = readFileSync(abs, "utf8")
-        const parsed = parseFrontmatter<Record<string, unknown>>(content, { file: character.path, strict: false })
-        diagnostics.push(...parsed.diagnostics)
+        const character = scan.entities.characters.find((c) => c.id === characterId);
+        if (!character) return;
+        const abs = fromRelativePosixPath(rootDir, character.path);
+        if (!existsSync(abs)) return;
+        const content = readFileSync(abs, "utf8");
+        const parsed = parseFrontmatter<Record<string, unknown>>(content, {
+          file: character.path,
+          strict: false,
+        });
+        diagnostics.push(...parsed.diagnostics);
 
-        const name = typeof parsed.data.name === "string" ? parsed.data.name : ""
-        const motivation = typeof parsed.data.motivation === "string" ? parsed.data.motivation : ""
-        const desire = typeof parsed.data.desire === "string" ? parsed.data.desire : ""
+        const name = typeof parsed.data.name === "string" ? parsed.data.name : "";
+        const motivation = typeof parsed.data.motivation === "string" ? parsed.data.motivation : "";
+        const desire = typeof parsed.data.desire === "string" ? parsed.data.desire : "";
         const block = [
           `## Character ${characterId}${name ? `: ${name}` : ""}`,
           motivation ? `- motivation: ${motivation}` : "",
@@ -201,21 +228,25 @@ export function createNovelContextPackTool(deps: { projectRoot: string; config: 
           "",
         ]
           .filter(Boolean)
-          .join("\n")
-        addSection(character.path, reason, block)
-      }
+          .join("\n");
+        addSection(character.path, reason, block);
+      };
 
       const includeThread = (threadId: string, reason: string) => {
-        const thread = scan.entities.threads.find((t) => t.thread_id === threadId)
-        if (!thread) return
-        const abs = fromRelativePosixPath(rootDir, thread.path)
-        if (!existsSync(abs)) return
-        const content = readFileSync(abs, "utf8")
-        const parsed = parseFrontmatter<Record<string, unknown>>(content, { file: thread.path, strict: false })
-        diagnostics.push(...parsed.diagnostics)
+        const thread = scan.entities.threads.find((t) => t.thread_id === threadId);
+        if (!thread) return;
+        const abs = fromRelativePosixPath(rootDir, thread.path);
+        if (!existsSync(abs)) return;
+        const content = readFileSync(abs, "utf8");
+        const parsed = parseFrontmatter<Record<string, unknown>>(content, {
+          file: thread.path,
+          strict: false,
+        });
+        diagnostics.push(...parsed.diagnostics);
 
-        const status = typeof parsed.data.status === "string" ? parsed.data.status : thread.status ?? ""
-        const closePlan = typeof parsed.data.close_plan === "string" ? parsed.data.close_plan : ""
+        const status =
+          typeof parsed.data.status === "string" ? parsed.data.status : (thread.status ?? "");
+        const closePlan = typeof parsed.data.close_plan === "string" ? parsed.data.close_plan : "";
         const block = [
           `## Thread ${threadId}`,
           status ? `- status: ${status}` : "",
@@ -223,33 +254,33 @@ export function createNovelContextPackTool(deps: { projectRoot: string; config: 
           "",
         ]
           .filter(Boolean)
-          .join("\n")
-        addSection(thread.path, reason, block)
-      }
+          .join("\n");
+        addSection(thread.path, reason, block);
+      };
 
       if (chapterKey) {
-        includeChapter(chapterKey, "target chapter")
+        includeChapter(chapterKey, "target chapter");
 
-        const target = scan.entities.chapters.find((c) => c.chapter_id === chapterKey)
+        const target = scan.entities.chapters.find((c) => c.chapter_id === chapterKey);
         if (!target) {
           diagnostics.push({
             severity: "error",
             code: "CONTEXT_CHAPTER_NOT_FOUND",
             message: `未找到章节: ${chapterKey}`,
-          })
+          });
         } else {
-          const last = include.lastChapters
-          const idx = chapterIndex.get(chapterKey) ?? -1
+          const last = include.lastChapters;
+          const idx = chapterIndex.get(chapterKey) ?? -1;
           if (last > 0 && idx >= 0) {
-            const start = Math.max(0, idx - last)
+            const start = Math.max(0, idx - last);
             for (let i = start; i < idx; i += 1) {
-              includeChapter(chaptersById[i].chapter_id, "recent chapter")
+              includeChapter(chaptersById[i].chapter_id, "recent chapter");
             }
           }
 
           if (include.characters) {
             for (const characterId of target.characters ?? []) {
-              includeCharacter(characterId, "chapter.characters")
+              includeCharacter(characterId, "chapter.characters");
             }
           }
           if (include.openThreads) {
@@ -257,23 +288,23 @@ export function createNovelContextPackTool(deps: { projectRoot: string; config: 
               ...(target.threads_opened ?? []),
               ...(target.threads_advanced ?? []),
               ...(target.threads_closed ?? []),
-            ])
+            ]);
             for (const threadId of threadIds) {
-              includeThread(threadId, "chapter.threads_*")
+              includeThread(threadId, "chapter.threads_*");
             }
           }
         }
       }
 
       if (threadKey) {
-        includeThread(threadKey, "target thread")
-        const thread = scan.entities.threads.find((t) => t.thread_id === threadKey)
+        includeThread(threadKey, "target thread");
+        const thread = scan.entities.threads.find((t) => t.thread_id === threadKey);
         if (!thread) {
           diagnostics.push({
             severity: "error",
             code: "CONTEXT_THREAD_NOT_FOUND",
             message: `未找到线程: ${threadKey}`,
-          })
+          });
         }
       }
 
@@ -284,28 +315,28 @@ export function createNovelContextPackTool(deps: { projectRoot: string; config: 
         "",
         ...sections,
         "",
-      ].join("\n")
+      ].join("\n");
 
       if (redaction.enabled) {
-        packContent = applyRedaction(packContent, redaction.patterns, diagnostics)
+        packContent = applyRedaction(packContent, redaction.patterns, diagnostics);
       }
 
-      const key = chapterKey ?? threadKey ?? "all"
-      const packPathAbs = buildPackPath(rootDir, outputDir, args.task, key)
-      const packPathRel = toRelativePosixPath(rootDir, packPathAbs)
+      const key = chapterKey ?? threadKey ?? "all";
+      const packPathAbs = buildPackPath(rootDir, outputDir, args.task, key);
+      const packPathRel = toRelativePosixPath(rootDir, packPathAbs);
 
       if (writeFile) {
-        writeTextFile(packPathAbs, packContent, { mode: "always" })
+        writeTextFile(packPathAbs, packContent, { mode: "always" });
       }
 
-      const durationMs = Date.now() - startedAt
+      const durationMs = Date.now() - startedAt;
       const resultJson: NovelContextPackResultJson = {
         version: 1,
         packPath: writeFile ? packPathRel : undefined,
         included,
         stats: { totalChars: packContent.length, budgetChars },
         diagnostics,
-      }
+      };
 
       return formatToolMarkdownOutput({
         summaryLines: [
@@ -317,8 +348,7 @@ export function createNovelContextPackTool(deps: { projectRoot: string; config: 
         ],
         resultJson,
         diagnostics,
-      })
+      });
     },
-  })
+  });
 }
-

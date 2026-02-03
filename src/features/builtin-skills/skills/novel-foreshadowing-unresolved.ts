@@ -7,5 +7,4 @@ export const NOVEL_FORESHADOWING_UNRESOLVED_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（threads/*.md 与章节 threads_* 标注）
-</skill-instruction>`
-
+</skill-instruction>`;

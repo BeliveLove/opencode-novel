@@ -1,2 +1,1 @@
-export { createConfigHandler } from "./config-handler"
-
+export { createConfigHandler } from "./config-handler";

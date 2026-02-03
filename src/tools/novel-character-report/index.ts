@@ -1,3 +1,6 @@
-export { createNovelCharacterReportTool } from "./tool"
-export type { NovelCharacterReportArgs, NovelCharacterReportResultJson, CharacterReportItem } from "./types"
-
+export { createNovelCharacterReportTool } from "./tool";
+export type {
+  CharacterReportItem,
+  NovelCharacterReportArgs,
+  NovelCharacterReportResultJson,
+} from "./types";

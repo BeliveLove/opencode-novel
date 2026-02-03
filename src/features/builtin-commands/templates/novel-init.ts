@@ -8,5 +8,4 @@ export const NOVEL_INIT_TEMPLATE = `目标：从 0 创建一个可用小说工�
    - 创建第 1 章计划：/novel-chapter-plan ch0001
 
 约束：
-- 不要修改任何既有正文（如果已经存在 manuscript/）。`
-
+- 不要修改任何既有正文（如果已经存在 manuscript/）。`;

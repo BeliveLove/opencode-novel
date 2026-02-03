@@ -1,31 +1,31 @@
-import type { BuiltinCommandName, BuiltinCommands, CommandDefinition } from "./types"
-import { NOVEL_INIT_TEMPLATE } from "./templates/novel-init"
-import { NOVEL_IMPORT_TEMPLATE } from "./templates/novel-import"
-import { NOVEL_BOOTSTRAP_TEMPLATE } from "./templates/novel-bootstrap"
-import { NOVEL_STYLE_GUIDE_TEMPLATE } from "./templates/novel-style-guide"
-import { NOVEL_BIBLE_TEMPLATE } from "./templates/novel-bible"
-import { NOVEL_INDEX_TEMPLATE } from "./templates/novel-index"
-import { NOVEL_ENTITIES_AUDIT_TEMPLATE } from "./templates/novel-entities-audit"
-import { NOVEL_GRAPH_TEMPLATE } from "./templates/novel-graph"
-import { NOVEL_CHARACTER_REPORT_TEMPLATE } from "./templates/novel-character-report"
-import { NOVEL_OUTLINE_TEMPLATE } from "./templates/novel-outline"
-import { NOVEL_CHARACTER_TEMPLATE } from "./templates/novel-character"
-import { NOVEL_FACTION_TEMPLATE } from "./templates/novel-faction"
-import { NOVEL_THREAD_TEMPLATE } from "./templates/novel-thread"
-import { NOVEL_CHAPTER_PLAN_TEMPLATE } from "./templates/novel-chapter-plan"
-import { NOVEL_EXTRACT_ENTITIES_TEMPLATE } from "./templates/novel-extract-entities"
-import { NOVEL_APPLY_CANDIDATES_TEMPLATE } from "./templates/novel-apply-candidates"
-import { NOVEL_CHAPTER_DRAFT_TEMPLATE } from "./templates/novel-chapter-draft"
-import { NOVEL_CONTINUATION_TEMPLATE } from "./templates/novel-continuation"
-import { NOVEL_REWRITE_TEMPLATE } from "./templates/novel-rewrite"
-import { NOVEL_POLISH_TEMPLATE } from "./templates/novel-polish"
-import { NOVEL_SUMMARY_TEMPLATE } from "./templates/novel-summary"
-import { NOVEL_CHAPTER_REVIEW_TEMPLATE } from "./templates/novel-chapter-review"
-import { NOVEL_CONTINUITY_CHECK_TEMPLATE } from "./templates/novel-continuity-check"
-import { NOVEL_FORESHADOWING_AUDIT_TEMPLATE } from "./templates/novel-foreshadowing-audit"
-import { NOVEL_STYLE_CHECK_TEMPLATE } from "./templates/novel-style-check"
-import { NOVEL_EXPORT_TEMPLATE } from "./templates/novel-export"
-import { NOVEL_SNAPSHOT_TEMPLATE } from "./templates/novel-snapshot"
+import { NOVEL_APPLY_CANDIDATES_TEMPLATE } from "./templates/novel-apply-candidates";
+import { NOVEL_BIBLE_TEMPLATE } from "./templates/novel-bible";
+import { NOVEL_BOOTSTRAP_TEMPLATE } from "./templates/novel-bootstrap";
+import { NOVEL_CHAPTER_DRAFT_TEMPLATE } from "./templates/novel-chapter-draft";
+import { NOVEL_CHAPTER_PLAN_TEMPLATE } from "./templates/novel-chapter-plan";
+import { NOVEL_CHAPTER_REVIEW_TEMPLATE } from "./templates/novel-chapter-review";
+import { NOVEL_CHARACTER_TEMPLATE } from "./templates/novel-character";
+import { NOVEL_CHARACTER_REPORT_TEMPLATE } from "./templates/novel-character-report";
+import { NOVEL_CONTINUATION_TEMPLATE } from "./templates/novel-continuation";
+import { NOVEL_CONTINUITY_CHECK_TEMPLATE } from "./templates/novel-continuity-check";
+import { NOVEL_ENTITIES_AUDIT_TEMPLATE } from "./templates/novel-entities-audit";
+import { NOVEL_EXPORT_TEMPLATE } from "./templates/novel-export";
+import { NOVEL_EXTRACT_ENTITIES_TEMPLATE } from "./templates/novel-extract-entities";
+import { NOVEL_FACTION_TEMPLATE } from "./templates/novel-faction";
+import { NOVEL_FORESHADOWING_AUDIT_TEMPLATE } from "./templates/novel-foreshadowing-audit";
+import { NOVEL_GRAPH_TEMPLATE } from "./templates/novel-graph";
+import { NOVEL_IMPORT_TEMPLATE } from "./templates/novel-import";
+import { NOVEL_INDEX_TEMPLATE } from "./templates/novel-index";
+import { NOVEL_INIT_TEMPLATE } from "./templates/novel-init";
+import { NOVEL_OUTLINE_TEMPLATE } from "./templates/novel-outline";
+import { NOVEL_POLISH_TEMPLATE } from "./templates/novel-polish";
+import { NOVEL_REWRITE_TEMPLATE } from "./templates/novel-rewrite";
+import { NOVEL_SNAPSHOT_TEMPLATE } from "./templates/novel-snapshot";
+import { NOVEL_STYLE_CHECK_TEMPLATE } from "./templates/novel-style-check";
+import { NOVEL_STYLE_GUIDE_TEMPLATE } from "./templates/novel-style-guide";
+import { NOVEL_SUMMARY_TEMPLATE } from "./templates/novel-summary";
+import { NOVEL_THREAD_TEMPLATE } from "./templates/novel-thread";
+import type { BuiltinCommandName, BuiltinCommands, CommandDefinition } from "./types";
 
 const BUILTIN_COMMANDS: Record<BuiltinCommandName, Omit<CommandDefinition, "name">> = {
   "novel-init": {
@@ -164,21 +164,20 @@ const BUILTIN_COMMANDS: Record<BuiltinCommandName, Omit<CommandDefinition, "name
     argumentHint: "<tag>",
     template: wrapTemplate(NOVEL_SNAPSHOT_TEMPLATE),
   },
-}
+};
 
 function wrapTemplate(inner: string): string {
-  return `<command-instruction>\n${inner}\n</command-instruction>\n\n<user-request>\n$ARGUMENTS\n</user-request>`
+  return `<command-instruction>\n${inner}\n</command-instruction>\n\n<user-request>\n$ARGUMENTS\n</user-request>`;
 }
 
 export function loadBuiltinCommands(disabledCommands?: BuiltinCommandName[]): BuiltinCommands {
-  const disabled = new Set(disabledCommands ?? [])
-  const commands: Partial<BuiltinCommands> = {}
+  const disabled = new Set(disabledCommands ?? []);
+  const commands: Partial<BuiltinCommands> = {};
   for (const [name, def] of Object.entries(BUILTIN_COMMANDS) as Array<
     [BuiltinCommandName, Omit<CommandDefinition, "name">]
   >) {
-    if (disabled.has(name)) continue
-    commands[name] = { name, ...def }
+    if (disabled.has(name)) continue;
+    commands[name] = { name, ...def };
   }
-  return commands as BuiltinCommands
+  return commands as BuiltinCommands;
 }
-

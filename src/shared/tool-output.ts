@@ -1,10 +1,10 @@
-import type { Diagnostic } from "./errors/diagnostics"
-import { formatDiagnosticsMarkdown } from "./errors/diagnostics"
+import type { Diagnostic } from "./errors/diagnostics";
+import { formatDiagnosticsMarkdown } from "./errors/diagnostics";
 
 export function formatToolMarkdownOutput(options: {
-  summaryLines: string[]
-  resultJson: unknown
-  diagnostics: Diagnostic[]
+  summaryLines: string[];
+  resultJson: unknown;
+  diagnostics: Diagnostic[];
 }): string {
   return [
     "## Summary",
@@ -18,6 +18,5 @@ export function formatToolMarkdownOutput(options: {
     "## Diagnostics",
     formatDiagnosticsMarkdown(options.diagnostics),
     "",
-  ].join("\n")
+  ].join("\n");
 }
-

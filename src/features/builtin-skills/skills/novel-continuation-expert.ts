@@ -10,5 +10,4 @@ export const NOVEL_CONTINUATION_EXPERT_SKILL = `<skill-instruction>
 
 ## Constraints
 - 不要直接覆盖 manuscript/chapters/<id>.md 正文，除非用户显式要求 apply。
-</skill-instruction>`
-
+</skill-instruction>`;

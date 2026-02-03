@@ -8,5 +8,4 @@ export const NOVEL_IMPORT_TEMPLATE = `目标：不改原文，把已有目录导
    - /novel-entities-audit --stubs
 
 约束：
-- 严禁修改 fromDir 下原始文件（只读）。`
-
+- 严禁修改 fromDir 下原始文件（只读）。`;

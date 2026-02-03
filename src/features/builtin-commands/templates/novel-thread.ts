@@ -5,5 +5,4 @@ export const NOVEL_THREAD_TEMPLATE = `目标：创建/更新线程卡（manuscri
 2) 调用 tool: novel_context_pack（task=foreshadowing）
 3) 调用 skill: novel-foreshadowing-unresolved
 4) 写入线程卡（补齐 opened_in/expected_close_by/close_plan）
-5) 运行 /novel-foreshadowing-audit（可选）。`
-
+5) 运行 /novel-foreshadowing-audit（可选）。`;

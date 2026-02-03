@@ -1,30 +1,32 @@
-import type { ChapterEntity, CharacterEntity, ThreadEntity } from "../novel-scan/types"
+import type { ChapterEntity, CharacterEntity, ThreadEntity } from "../novel-scan/types";
 
-const DERIVED_HEADER = "<!-- novel:derived v1; DO NOT EDIT BY HAND -->"
+const DERIVED_HEADER = "<!-- novel:derived v1; DO NOT EDIT BY HAND -->";
 
 function mdEscapeCell(value: string): string {
-  return value.replaceAll("|", "\\|").replaceAll("\n", " ").trim()
+  return value.replaceAll("|", "\\|").replaceAll("\n", " ").trim();
 }
 
 function renderTable(headers: string[], rows: string[][]): string {
-  const headerLine = `| ${headers.map(mdEscapeCell).join(" | ")} |`
-  const sepLine = `| ${headers.map(() => "---").join(" | ")} |`
-  const bodyLines = rows.map((r) => `| ${r.map((c) => mdEscapeCell(c)).join(" | ")} |`)
-  return [headerLine, sepLine, ...bodyLines].join("\n")
+  const headerLine = `| ${headers.map(mdEscapeCell).join(" | ")} |`;
+  const sepLine = `| ${headers.map(() => "---").join(" | ")} |`;
+  const bodyLines = rows.map((r) => `| ${r.map((c) => mdEscapeCell(c)).join(" | ")} |`);
+  return [headerLine, sepLine, ...bodyLines].join("\n");
 }
 
 function formatList(values: string[] | undefined): string {
-  if (!values || values.length === 0) return ""
-  return values.join(", ")
+  if (!values || values.length === 0) return "";
+  return values.join(", ");
 }
 
 export function renderIndexMd(options: {
-  chapters: ChapterEntity[]
-  characters: CharacterEntity[]
-  threads: Array<ThreadEntity & { opened_in?: string; expected_close_by?: string; closed_in?: string | null }>
-  factions: Array<{ id: string; name?: string; appearances: number }>
-  locations: Array<{ id: string; name?: string; appearances: number }>
-  characterAppearances: Map<string, { count: number; first?: string; last?: string }>
+  chapters: ChapterEntity[];
+  characters: CharacterEntity[];
+  threads: Array<
+    ThreadEntity & { opened_in?: string; expected_close_by?: string; closed_in?: string | null }
+  >;
+  factions: Array<{ id: string; name?: string; appearances: number }>;
+  locations: Array<{ id: string; name?: string; appearances: number }>;
+  characterAppearances: Map<string, { count: number; first?: string; last?: string }>;
 }): string {
   const chapterRows = options.chapters.map((c) => [
     c.chapter_id,
@@ -35,10 +37,10 @@ export function renderIndexMd(options: {
     formatList(c.characters),
     formatList(c.threads_opened),
     formatList(c.threads_closed),
-  ])
+  ]);
 
   const characterRows = options.characters.map((c) => {
-    const stats = options.characterAppearances.get(c.id)
+    const stats = options.characterAppearances.get(c.id);
     return [
       c.id,
       c.name ?? "",
@@ -46,8 +48,8 @@ export function renderIndexMd(options: {
       stats?.first ?? "",
       stats?.last ?? "",
       String(stats?.count ?? 0),
-    ]
-  })
+    ];
+  });
 
   const threadRows = options.threads.map((t) => [
     t.thread_id,
@@ -56,19 +58,11 @@ export function renderIndexMd(options: {
     t.opened_in ?? "",
     t.expected_close_by ?? "",
     t.closed_in ?? "",
-  ])
+  ]);
 
-  const factionRows = options.factions.map((f) => [
-    f.id,
-    f.name ?? "",
-    String(f.appearances),
-  ])
+  const factionRows = options.factions.map((f) => [f.id, f.name ?? "", String(f.appearances)]);
 
-  const locationRows = options.locations.map((l) => [
-    l.id,
-    l.name ?? "",
-    String(l.appearances),
-  ])
+  const locationRows = options.locations.map((l) => [l.id, l.name ?? "", String(l.appearances)]);
 
   return [
     DERIVED_HEADER,
@@ -78,7 +72,16 @@ export function renderIndexMd(options: {
     "## Chapters",
     "",
     renderTable(
-      ["chapter_id", "title", "pov", "date", "location", "characters", "threads_opened", "threads_closed"],
+      [
+        "chapter_id",
+        "title",
+        "pov",
+        "date",
+        "location",
+        "characters",
+        "threads_opened",
+        "threads_closed",
+      ],
       chapterRows,
     ),
     "",
@@ -101,7 +104,7 @@ export function renderIndexMd(options: {
     "",
     renderTable(["id", "name", "appearances"], locationRows),
     "",
-  ].join("\n")
+  ].join("\n");
 }
 
 export function renderTimelineMd(options: { chapters: ChapterEntity[] }): string {
@@ -113,22 +116,21 @@ export function renderTimelineMd(options: { chapters: ChapterEntity[] }): string
     c.timeline?.location ?? "",
     c.title ?? "",
     c.summary ?? "",
-  ])
+  ]);
   return [
     DERIVED_HEADER,
     "",
     "# TIMELINE",
     "",
-    renderTable(
-      ["chapter_id", "date", "start", "end", "location", "title", "summary"],
-      rows,
-    ),
+    renderTable(["chapter_id", "date", "start", "end", "location", "title", "summary"], rows),
     "",
-  ].join("\n")
+  ].join("\n");
 }
 
 export function renderThreadsReportMd(options: {
-  threads: Array<ThreadEntity & { opened_in?: string; expected_close_by?: string; closed_in?: string | null }>
+  threads: Array<
+    ThreadEntity & { opened_in?: string; expected_close_by?: string; closed_in?: string | null }
+  >;
 }): string {
   const rows = options.threads.map((t) => [
     t.thread_id,
@@ -137,7 +139,7 @@ export function renderThreadsReportMd(options: {
     t.opened_in ?? "",
     t.expected_close_by ?? "",
     t.closed_in ?? "",
-  ])
+  ]);
   return [
     DERIVED_HEADER,
     "",
@@ -148,6 +150,5 @@ export function renderThreadsReportMd(options: {
       rows,
     ),
     "",
-  ].join("\n")
+  ].join("\n");
 }
-

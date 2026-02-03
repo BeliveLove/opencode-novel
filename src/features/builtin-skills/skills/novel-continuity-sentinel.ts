@@ -8,5 +8,4 @@ export const NOVEL_CONTINUITY_SENTINEL_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（具体到文件与字段）
-</skill-instruction>`
-
+</skill-instruction>`;

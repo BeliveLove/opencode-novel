@@ -1,6 +1,5 @@
-import { createHash } from "node:crypto"
+import { createHash } from "node:crypto";
 
 export function hash8(input: string): string {
-  return createHash("sha256").update(input).digest("hex").slice(0, 8)
+  return createHash("sha256").update(input).digest("hex").slice(0, 8);
 }
-

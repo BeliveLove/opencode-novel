@@ -7,5 +7,4 @@ export const NOVEL_SUMMARY_EXPERT_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（章节 frontmatter.summary 或独立 summary.md）
-</skill-instruction>`
-
+</skill-instruction>`;

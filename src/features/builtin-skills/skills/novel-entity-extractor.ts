@@ -29,4 +29,4 @@ export const NOVEL_ENTITY_EXTRACTOR_SKILL = `<skill-instruction>
   - location: loc-
   - thread: th-
 - 不确定就标注 needs_confirmation（写在 notes），或在 Questions 追问。
-</skill-instruction>`
+</skill-instruction>`;

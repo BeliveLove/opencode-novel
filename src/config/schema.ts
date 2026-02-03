@@ -1,13 +1,11 @@
-import { z } from "zod"
+import { z } from "zod";
 
-const NovelLanguageSchema = z.enum(["zh", "en"]).default("zh")
-const NovelEncodingSchema = z.enum(["utf8"]).default("utf8")
+const NovelLanguageSchema = z.enum(["zh", "en"]).default("zh");
+const NovelEncodingSchema = z.enum(["utf8"]).default("utf8");
 
 const StyleGuideSchema = z
   .object({
-    pov: z
-      .enum(["first", "third_limited", "third_omniscient", "multi"])
-      .optional(),
+    pov: z.enum(["first", "third_limited", "third_omniscient", "multi"]).optional(),
     tense: z.enum(["past", "present", "mixed"]).optional(),
     tone: z.string().optional(),
     taboos: z.array(z.string()).default([]),
@@ -23,7 +21,7 @@ const StyleGuideSchema = z
     taboos: [],
     rating: "G",
     lexicon: { preferred: [], avoid: [] },
-  })
+  });
 
 const NamingSchema = z
   .object({
@@ -41,7 +39,7 @@ const NamingSchema = z
     factionIdPattern: "^fac-[\\w\\u4e00-\\u9fa5-]+$",
     locationIdPattern: "^loc-[\\w\\u4e00-\\u9fa5-]+$",
     dateFormat: "ISO",
-  })
+  });
 
 const IndexSchema = z
   .object({
@@ -55,14 +53,14 @@ const IndexSchema = z
     cacheDir: ".opencode/novel/cache",
     stableSortLocale: "zh-CN",
     writeDerivedFiles: true,
-  })
+  });
 
 const ContinuityRuleConfigSchema = z.object({
   id: z.string(),
   enabled: z.boolean().default(true),
   severity: z.enum(["error", "warn", "info"]).default("warn"),
   params: z.record(z.string(), z.unknown()).optional(),
-})
+});
 
 const ContinuitySchema = z
   .object({
@@ -70,7 +68,7 @@ const ContinuitySchema = z
     rules: z.array(ContinuityRuleConfigSchema).default([]),
     strictMode: z.boolean().default(false),
   })
-  .default({ enabled: true, rules: [], strictMode: false })
+  .default({ enabled: true, rules: [], strictMode: false });
 
 const ThreadsSchema = z
   .object({
@@ -78,10 +76,10 @@ const ThreadsSchema = z
     requireClosePlan: z.boolean().default(true),
     staleDaysWarn: z.number().int().nonnegative().default(30),
   })
-  .default({ enabled: true, requireClosePlan: true, staleDaysWarn: 30 })
+  .default({ enabled: true, requireClosePlan: true, staleDaysWarn: 30 });
 
-const NovelExportFormatSchema = z.enum(["md", "html", "epub", "docx"])
-const NovelChapterOrderSchema = z.enum(["by_id", "by_timeline", "custom"])
+const NovelExportFormatSchema = z.enum(["md", "html", "epub", "docx"]);
+const NovelChapterOrderSchema = z.enum(["by_id", "by_timeline", "custom"]);
 
 const ExportSchema = z
   .object({
@@ -95,7 +93,7 @@ const ExportSchema = z
     chapterOrder: "by_id",
     includeFrontmatter: false,
     outputDir: "export",
-  })
+  });
 
 const ContextPackSchema = z
   .object({
@@ -124,7 +122,7 @@ const ContextPackSchema = z
     maxChars: 12000,
     include: { bible: true, characters: true, openThreads: true, lastChapters: 3 },
     redaction: { enabled: false, patterns: [] },
-  })
+  });
 
 const AgentOverrideSchema = z
   .object({
@@ -139,47 +137,46 @@ const AgentOverrideSchema = z
     tools: z.record(z.string(), z.boolean()).optional(),
     permission: z.record(z.string(), z.unknown()).optional(),
   })
-  .passthrough()
+  .passthrough();
 
 const ChapterDetectionPatternSchema = z.object({
   id: z.string(),
   regex: z.string(),
   flags: z.string().optional(),
-})
+});
 
 const ImportSchema = z
   .object({
     enabled: z.boolean().default(true),
     defaultMode: z.enum(["copy", "analyze"]).default("copy"),
     includeGlobs: z.array(z.string()).default(["**/*.md", "**/*.txt"]),
-    excludeGlobs: z.array(z.string()).default([
-      ".git/**",
-      ".opencode/**",
-      "manuscript/**",
-      "node_modules/**",
-      "dist/**",
-      "build/**",
-      "out/**",
-      ".cache/**",
-    ]),
+    excludeGlobs: z
+      .array(z.string())
+      .default([
+        ".git/**",
+        ".opencode/**",
+        "manuscript/**",
+        "node_modules/**",
+        "dist/**",
+        "build/**",
+        "out/**",
+        ".cache/**",
+      ]),
     chapterDetection: z
       .object({
         mode: z.literal("heading_heuristic").default("heading_heuristic"),
-        patterns: z
-          .array(ChapterDetectionPatternSchema)
-          .default([
-            {
-              id: "zh_chapter",
-              regex:
-                "^\\s*#*\\s*第([0-9一二三四五六七八九十百千万两〇零]+)\\s*章(.*)$",
-              flags: "i",
-            },
-            {
-              id: "en_chapter",
-              regex: "^\\s*#*\\s*Chapter\\s+(\\d+)\\s*[:：-]?\\s*(.*)$",
-              flags: "i",
-            },
-          ]),
+        patterns: z.array(ChapterDetectionPatternSchema).default([
+          {
+            id: "zh_chapter",
+            regex: "^\\s*#*\\s*第([0-9一二三四五六七八九十百千万两〇零]+)\\s*章(.*)$",
+            flags: "i",
+          },
+          {
+            id: "en_chapter",
+            regex: "^\\s*#*\\s*Chapter\\s+(\\d+)\\s*[:：-]?\\s*(.*)$",
+            flags: "i",
+          },
+        ]),
         enableLooseH1AfterFirstMatch: z.boolean().default(true),
       })
       .default({
@@ -187,8 +184,7 @@ const ImportSchema = z
         patterns: [
           {
             id: "zh_chapter",
-            regex:
-              "^\\s*#*\\s*第([0-9一二三四五六七八九十百千万两〇零]+)\\s*章(.*)$",
+            regex: "^\\s*#*\\s*第([0-9一二三四五六七八九十百千万两〇零]+)\\s*章(.*)$",
             flags: "i",
           },
           {
@@ -229,8 +225,7 @@ const ImportSchema = z
       patterns: [
         {
           id: "zh_chapter",
-          regex:
-            "^\\s*#*\\s*第([0-9一二三四五六七八九十百千万两〇零]+)\\s*章(.*)$",
+          regex: "^\\s*#*\\s*第([0-9一二三四五六七八九十百千万两〇零]+)\\s*章(.*)$",
           flags: "i",
         },
         {
@@ -244,7 +239,7 @@ const ImportSchema = z
     chapterId: { scheme: "from_heading", prefix: "ch", pad: 4, specialPrefix: "sp" },
     multiChapterFiles: "split",
     manuscriptExistsPolicy: "merge",
-  })
+  });
 
 const CompatSchema = z
   .object({
@@ -256,7 +251,7 @@ const CompatSchema = z
     export_slashcommand_tool: true,
     export_skill_tool: true,
     export_skill_mcp_tool: false,
-  })
+  });
 
 export const NovelConfigSchema = z
   .object({
@@ -293,6 +288,6 @@ export const NovelConfigSchema = z
     disabled_skills: z.array(z.string()).default([]),
     disabled_rules: z.array(z.string()).default([]),
   })
-  .passthrough()
+  .passthrough();
 
-export type NovelConfig = z.infer<typeof NovelConfigSchema>
+export type NovelConfig = z.infer<typeof NovelConfigSchema>;

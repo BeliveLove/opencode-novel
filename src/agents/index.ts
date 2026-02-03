@@ -1,10 +1,8 @@
-import type { AgentConfig } from "@opencode-ai/sdk"
-import type { NovelAgentBaseName } from "./types"
-import { createNovelMuseAgent } from "./muse"
-import { createNovelEditorAgent } from "./editor"
-import { createNovelSentinelAgent } from "./sentinel"
+import type { AgentConfig } from "@opencode-ai/sdk";
+import { createNovelEditorAgent } from "./editor";
 import {
   createNovelCharacterExpertAgent,
+  createNovelContinuationExpertAgent,
   createNovelContinuitySentinelAgent,
   createNovelEntityExtractorAgent,
   createNovelFactionRelationsAgent,
@@ -15,23 +13,25 @@ import {
   createNovelSummaryExpertAgent,
   createNovelTimelineKeeperAgent,
   createNovelWorldbibleKeeperAgent,
-  createNovelContinuationExpertAgent,
-} from "./experts"
+} from "./experts";
+import { createNovelMuseAgent } from "./muse";
+import { createNovelSentinelAgent } from "./sentinel";
+import type { NovelAgentBaseName } from "./types";
 
-export type { NovelAgentBaseName } from "./types"
+export type { NovelAgentBaseName } from "./types";
 
 export function createNovelAgents(options: {
-  preset: "core" | "full"
-  model: string
+  preset: "core" | "full";
+  model: string;
 }): Record<NovelAgentBaseName, AgentConfig> {
   const core = {
     muse: createNovelMuseAgent(options.model),
     editor: createNovelEditorAgent(options.model),
     sentinel: createNovelSentinelAgent(options.model),
-  } satisfies Record<string, AgentConfig>
+  } satisfies Record<string, AgentConfig>;
 
   if (options.preset === "core") {
-    return core as Record<NovelAgentBaseName, AgentConfig>
+    return core as Record<NovelAgentBaseName, AgentConfig>;
   }
 
   return {
@@ -48,6 +48,5 @@ export function createNovelAgents(options: {
     "continuation-expert": createNovelContinuationExpertAgent(options.model),
     "polish-expert": createNovelPolishExpertAgent(options.model),
     "summary-expert": createNovelSummaryExpertAgent(options.model),
-  } as Record<NovelAgentBaseName, AgentConfig>
+  } as Record<NovelAgentBaseName, AgentConfig>;
 }
-

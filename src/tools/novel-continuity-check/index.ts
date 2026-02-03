@@ -1,3 +1,8 @@
-export { createNovelContinuityCheckTool } from "./tool"
-export type { NovelContinuityArgs, NovelContinuityResultJson, NovelContinuityScope, ContinuityFinding, ContinuitySeverity } from "./types"
-
+export { createNovelContinuityCheckTool } from "./tool";
+export type {
+  ContinuityFinding,
+  ContinuitySeverity,
+  NovelContinuityArgs,
+  NovelContinuityResultJson,
+  NovelContinuityScope,
+} from "./types";

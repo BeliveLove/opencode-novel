@@ -1,13 +1,13 @@
-import { tool, type ToolDefinition } from "@opencode-ai/plugin"
-import type { NovelConfig } from "../../config/schema"
-import { formatToolMarkdownOutput } from "../../shared/tool-output"
-import { sortDiagnostics } from "../../shared/errors/diagnostics"
-import type { NovelScanArgs, NovelScanResultJson } from "./types"
-import { scanNovelProject } from "./scan"
+import { type ToolDefinition, tool } from "@opencode-ai/plugin";
+import type { NovelConfig } from "../../config/schema";
+import { sortDiagnostics } from "../../shared/errors/diagnostics";
+import { formatToolMarkdownOutput } from "../../shared/tool-output";
+import { scanNovelProject } from "./scan";
+import type { NovelScanArgs, NovelScanResultJson } from "./types";
 
 export function createNovelScanTool(deps: {
-  projectRoot: string
-  config: NovelConfig
+  projectRoot: string;
+  config: NovelConfig;
 }): ToolDefinition {
   return tool({
     description:
@@ -20,8 +20,15 @@ export function createNovelScanTool(deps: {
       writeCache: tool.schema.boolean().optional(),
     },
     async execute(args: NovelScanArgs) {
-      const { result } = scanNovelProject({ projectRoot: deps.projectRoot, config: deps.config, args })
-      const final: NovelScanResultJson = { ...result, diagnostics: sortDiagnostics(result.diagnostics) }
+      const { result } = scanNovelProject({
+        projectRoot: deps.projectRoot,
+        config: deps.config,
+        args,
+      });
+      const final: NovelScanResultJson = {
+        ...result,
+        diagnostics: sortDiagnostics(result.diagnostics),
+      };
 
       return formatToolMarkdownOutput({
         summaryLines: [
@@ -31,8 +38,7 @@ export function createNovelScanTool(deps: {
         ],
         resultJson: final,
         diagnostics: final.diagnostics,
-      })
+      });
     },
-  })
+  });
 }
-

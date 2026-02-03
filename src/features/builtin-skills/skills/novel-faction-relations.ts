@@ -10,5 +10,4 @@ export const NOVEL_FACTION_RELATIONS_SKILL = `<skill-instruction>
 
 ## Notes
 - Mermaid 图建议用 graph TD/graph LR。
-</skill-instruction>`
-
+</skill-instruction>`;
