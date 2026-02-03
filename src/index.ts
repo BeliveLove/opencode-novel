@@ -1,5 +1,6 @@
 import type { Plugin, ToolDefinition } from "@opencode-ai/plugin"
 import { loadNovelConfig } from "./config/load"
+import { createConfigHandler } from "./plugin-handlers"
 import { createNovelScanTool } from "./tools/novel-scan"
 import { createNovelScaffoldTool } from "./tools/novel-scaffold"
 import { createNovelIndexTool } from "./tools/novel-index"
@@ -14,6 +15,8 @@ import { createNovelStyleCheckTool } from "./tools/novel-style-check"
 import { createNovelForeshadowingAuditTool } from "./tools/novel-foreshadowing-audit"
 import { createNovelApplyCandidatesTool } from "./tools/novel-apply-candidates"
 import { createNovelContinuityCheckTool } from "./tools/novel-continuity-check"
+import { createSkillTool } from "./tools/skill"
+import { createSlashcommandTool } from "./tools/slashcommand"
 
 const NovelPlugin: Plugin = async (ctx) => {
   const { config, errors } = loadNovelConfig(ctx.directory)
@@ -41,7 +44,26 @@ const NovelPlugin: Plugin = async (ctx) => {
     novel_continuity_check: createNovelContinuityCheckTool({ projectRoot: ctx.directory, config }),
   }
 
-  return { tool: tools }
+  const compat = config.compat
+  const extendedTools: Record<string, ToolDefinition> = {
+    ...tools,
+    ...(compat.export_skill_tool
+      ? { skill: createSkillTool({ projectRoot: ctx.directory, disabledSkills: config.disabled_skills }) }
+      : {}),
+    ...(compat.export_slashcommand_tool
+      ? {
+          slashcommand: createSlashcommandTool({
+            projectRoot: ctx.directory,
+            disabledCommands: config.disabled_commands,
+            disabledSkills: config.disabled_skills,
+          }),
+        }
+      : {}),
+  }
+
+  const configHandler = createConfigHandler({ pluginConfig: config })
+
+  return { tool: extendedTools, config: configHandler }
 }
 
 export default NovelPlugin
