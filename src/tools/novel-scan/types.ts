@@ -24,6 +24,8 @@ export type ChapterEntity = {
   pov?: string
   timeline?: { date?: string; start?: string; end?: string; location?: string }
   characters?: string[]
+  factions?: string[]
+  locations?: string[]
   threads_opened?: string[]
   threads_advanced?: string[]
   threads_closed?: string[]
@@ -58,4 +60,3 @@ export type ScanCacheV1 = NovelScanResultJson & {
     perFileDiagnostics?: Record<string, Diagnostic[]>
   }
 }
-

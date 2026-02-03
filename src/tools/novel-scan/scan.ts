@@ -281,6 +281,12 @@ export function scanNovelProject(deps: {
         characters: Array.isArray(data.characters)
           ? (data.characters.filter((x) => typeof x === "string") as string[])
           : undefined,
+        factions: Array.isArray(data.factions)
+          ? (data.factions.filter((x) => typeof x === "string") as string[])
+          : undefined,
+        locations: Array.isArray(data.locations)
+          ? (data.locations.filter((x) => typeof x === "string") as string[])
+          : undefined,
         threads_opened: Array.isArray(data.threads_opened)
           ? (data.threads_opened.filter((x) => typeof x === "string") as string[])
           : undefined,
@@ -422,6 +428,7 @@ export function scanNovelProject(deps: {
 
   const definedCharacters = new Set(characters.map((c) => c.id))
   const definedThreads = new Set(threads.map((t) => t.thread_id))
+  const definedFactions = new Set(factions.map((f) => f.id))
   const definedLocations = new Set(locations.map((l) => l.id))
 
   for (const chapter of chapters) {
@@ -433,6 +440,30 @@ export function scanNovelProject(deps: {
           message: `章节引用了未定义角色: ${charId}`,
           file: chapter.path,
           suggestedFix: `创建 manuscript/characters/${charId}.md 或从 chapters/${chapter.chapter_id}.md 中移除该引用。`,
+        })
+      }
+    }
+
+    for (const factionId of chapter.factions ?? []) {
+      if (!definedFactions.has(factionId)) {
+        diagnostics.push({
+          severity: strictMode ? "warn" : "info",
+          code: "SCAN_REF_FACTION_UNDEFINED",
+          message: `章节引用了未定义势力: ${factionId}`,
+          file: chapter.path,
+          suggestedFix: `创建 manuscript/factions/${factionId}.md 或从 chapters/${chapter.chapter_id}.md 中移除该引用。`,
+        })
+      }
+    }
+
+    for (const locationId of chapter.locations ?? []) {
+      if (!definedLocations.has(locationId)) {
+        diagnostics.push({
+          severity: strictMode ? "warn" : "info",
+          code: "SCAN_REF_LOCATION_UNDEFINED",
+          message: `章节引用了未定义地点: ${locationId}`,
+          file: chapter.path,
+          suggestedFix: `创建 manuscript/locations/${locationId}.md 或从 chapters/${chapter.chapter_id}.md 中移除该引用。`,
         })
       }
     }
@@ -457,7 +488,7 @@ export function scanNovelProject(deps: {
       diagnostics.push({
         severity: strictMode ? "warn" : "info",
         code: "SCAN_REF_LOCATION_UNDEFINED",
-        message: `章节引用了未定义地点: ${locationId}`,
+        message: `章节引用了未定义地点(timeline.location): ${locationId}`,
         file: chapter.path,
         suggestedFix: `创建 manuscript/locations/${locationId}.md 或更新 timeline.location。`,
       })
@@ -525,4 +556,3 @@ export function loadOrScan(deps: {
 
   return scanNovelProject({ projectRoot: deps.projectRoot, config: deps.config, args }).result
 }
-
