@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+
+# OpenCode / derived outputs
+.opencode/
+manuscript/
+export/
+
+# logs / caches
+*.log
+.cache/
+

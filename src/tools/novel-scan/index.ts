@@ -1,0 +1,2 @@
+export { createNovelScanTool } from "./tool"
+
