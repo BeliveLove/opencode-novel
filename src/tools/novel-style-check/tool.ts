@@ -110,16 +110,30 @@ export function createNovelStyleCheckTool(deps: {
 
       const findings: StyleFinding[] = [];
 
-      for (const chapter of chapters) {
-        const abs = fromRelativePosixPath(rootDir, chapter.path);
-        if (!existsSync(abs)) continue;
+      const chapterBodyCache = new Map<string, string>();
+      const getChapterBody = (chapterPath: string): string => {
+        if (chapterBodyCache.has(chapterPath)) return chapterBodyCache.get(chapterPath) ?? "";
+
+        const abs = fromRelativePosixPath(rootDir, chapterPath);
+        if (!existsSync(abs)) {
+          chapterBodyCache.set(chapterPath, "");
+          return "";
+        }
+
         const content = readTextFileSync(abs, { encoding: deps.config.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
-          file: chapter.path,
+          file: chapterPath,
           strict: false,
         });
         diagnostics.push(...parsed.diagnostics);
-        const body = parsed.body;
+
+        chapterBodyCache.set(chapterPath, parsed.body);
+        return parsed.body;
+      };
+
+      for (const chapter of chapters) {
+        const body = getChapterBody(chapter.path);
+        if (!body) continue;
 
         for (const word of avoidWords) {
           if (!word) continue;
@@ -136,6 +150,15 @@ export function createNovelStyleCheckTool(deps: {
       }
 
       // Voice catchphrases statistics (info)
+      const chapterPathsByCharacter = new Map<string, string[]>();
+      for (const chapter of scan.entities.chapters) {
+        for (const id of chapter.characters ?? []) {
+          const list = chapterPathsByCharacter.get(id) ?? [];
+          list.push(chapter.path);
+          chapterPathsByCharacter.set(id, list);
+        }
+      }
+
       const catchphraseThreshold = 10;
       for (const character of scan.entities.characters) {
         const abs = fromRelativePosixPath(rootDir, character.path);
@@ -154,21 +177,8 @@ export function createNovelStyleCheckTool(deps: {
           : [];
         if (catchphrases.length === 0) continue;
 
-        const relatedChapters = scan.entities.chapters.filter((c) =>
-          (c.characters ?? []).includes(character.id),
-        );
-        const corpus = relatedChapters
-          .map((c) => {
-            const absPath = fromRelativePosixPath(rootDir, c.path);
-            if (!existsSync(absPath)) return "";
-            const text = readTextFileSync(absPath, { encoding: deps.config.encoding });
-            const p = parseFrontmatter<Record<string, unknown>>(text, {
-              file: c.path,
-              strict: false,
-            });
-            return p.body;
-          })
-          .join("\n\n");
+        const relatedPaths = chapterPathsByCharacter.get(character.id) ?? [];
+        const corpus = relatedPaths.map(getChapterBody).filter(Boolean).join("\n\n");
 
         for (const phrase of catchphrases) {
           const count = findOccurrences(corpus, phrase).length;
