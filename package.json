@@ -20,6 +20,7 @@
     "build": "bun run clean && bun build src/index.ts --outdir dist --target bun --format esm && tsc --emitDeclarationOnly && bun run build:schema",
     "build:schema": "bun run script/build-schema.ts",
     "clean": "rm -rf dist",
+    "install:opencode": "bun run script/install-opencode.ts -- --target=global",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write .",
     "postinstall": "lefthook install",

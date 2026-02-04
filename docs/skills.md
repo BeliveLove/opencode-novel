@@ -1,6 +1,11 @@
 # Skills（专家能力库）
 
-本插件通过 `skill` 工具暴露内置 skills；也支持项目级覆盖：`.opencode/skills/`。
+OpenCode Agent Skills 会从以下位置加载：
+
+- 全局：`~/.config/opencode/skill/<name>/SKILL.md`
+- 项目：`<project>/.opencode/skill/<name>/SKILL.md`
+
+本仓库提供一套专家 skills，可用 `bun run script/install-opencode.ts -- --target=global` 一键安装到全局目录。
 
 ## 列表
 
@@ -28,4 +33,3 @@
 5) `## Files To Update`
 
 其中 `novel-entity-extractor` 额外要求输出 `## Result (JSON)`（NovelCandidatesV1）。
-

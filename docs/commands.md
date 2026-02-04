@@ -1,6 +1,11 @@
 # Commands（/novel-*）
 
-本插件通过 `slashcommand` 工具暴露内置命令模板；也支持项目级覆盖：`.opencode/command/*.md`。
+OpenCode 自定义命令会从以下位置加载：
+
+- 全局：`~/.config/opencode/commands/*.md`
+- 项目：`<project>/.opencode/commands/*.md`
+
+本仓库提供一套 `/novel-*` 命令模板，可用 `bun run script/install-opencode.ts -- --target=global` 一键安装到全局目录。
 
 ## 初始化与工程
 

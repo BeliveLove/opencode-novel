@@ -5,8 +5,8 @@
 ## 功能概览
 
 - Tools（`novel_*`）：扫描、索引、巡检、导出（md/html/docx）、上下文包、受控落盘等（见 `src/tools/`）
-- Commands（`/novel-*`）：通过 `slashcommand` 工具暴露内置命令模板（见 `docs/commands.md`）
-- Skills：通过 `skill` 工具暴露内置专家模板（见 `docs/skills.md`）
+- Commands（`/novel-*`）：OpenCode 自定义命令（见 `docs/commands.md`）
+- Skills：OpenCode Agent Skills（见 `docs/skills.md`）
 - Agents：插件在 `config` hook 中注入 `novel-muse` / `novel-editor` / `novel-sentinel`（可选 `full` 预设导出更多专家）
 
 ## 本地调试（Windows 示例）
@@ -14,14 +14,9 @@
 1. 构建：
    - `bun install`
    - `bun run build`
-2. 在 OpenCode 配置中加入插件（注意 `file:///` 且使用 `/`）：
-   ```json
-   {
-     "plugin": [
-       "file:///D:/code/novel/dist/index.js"
-     ]
-   }
-   ```
+2. 安装到 OpenCode（推荐）：
+   - `bun run script/install-opencode.ts -- --target=global`
+   - 重启 OpenCode（插件与自定义命令/技能会自动生效）
 
 ## 配置
 

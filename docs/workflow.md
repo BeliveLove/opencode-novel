@@ -2,6 +2,16 @@
 
 > 建议把小说工程放在一个独立目录中，OpenCode 打开该目录后加载本插件。
 
+## 0) 安装（一次性）
+
+在本插件工程目录执行：
+
+- `bun install`
+- `bun run build`
+- `bun run script/install-opencode.ts -- --target=global`
+
+然后重启 OpenCode（会自动加载插件与 `/novel-*` 命令、`novel-*` skills）。
+
 ## 1) 初始化工程
 
 - 运行：`/novel-init "书名"`
