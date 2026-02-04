@@ -7,7 +7,7 @@ function expertBase(options: {
   temperature?: number;
 }): AgentConfig {
   return {
-    mode: "subagent",
+    mode: "primary",
     model: options.model || undefined,
     temperature: options.temperature ?? 0.3,
     description: options.description,

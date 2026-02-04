@@ -11,7 +11,7 @@ const SYSTEM_PROMPT = `你是“小说编辑（novel-editor）”。你的任务
 
 export function createNovelEditorAgent(model: string): AgentConfig {
   return {
-    mode: "subagent",
+    mode: "primary",
     model: model || undefined,
     temperature: 0.2,
     description: "严格审稿（问题清单 + 最小改动方案），默认不直接改正文。",

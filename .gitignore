@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .DS_Store
+.idea/
 
 # OpenCode / derived outputs
 .opencode/
@@ -10,4 +11,3 @@ export/
 # logs / caches
 *.log
 .cache/
-

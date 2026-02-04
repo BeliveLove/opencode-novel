@@ -1,8 +1,9 @@
 #!/usr/bin/env bun
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
+import { applyEdits, modify, type ParseError, parse } from "jsonc-parser";
 import { loadBuiltinCommands } from "../src/features/builtin-commands/commands";
 import { loadBuiltinSkills } from "../src/features/builtin-skills/skills";
 import { writeTextFile } from "../src/shared/fs/write";
@@ -81,6 +82,68 @@ function detectGlobalOpencodeDir(): string {
   return primary;
 }
 
+function detectOpencodeConfigPath(opencodeDir: string): string {
+  const jsonc = path.join(opencodeDir, "opencode.jsonc");
+  const json = path.join(opencodeDir, "opencode.json");
+  if (existsSync(jsonc)) return jsonc;
+  if (existsSync(json)) return json;
+  return json;
+}
+
+function parseJsoncObject(raw: string): { data: Record<string, unknown> | null; errors: string[] } {
+  const errors: string[] = [];
+  const parseErrors: ParseError[] = [];
+  const parsed = parse(raw, parseErrors) as unknown;
+
+  if (parseErrors.length > 0) {
+    errors.push(
+      ...parseErrors.map(
+        (e) => `JSONC parse error: code=${e.error} offset=${e.offset} length=${e.length}`,
+      ),
+    );
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    errors.push("Config root must be a JSON object.");
+    return { data: null, errors };
+  }
+
+  return { data: parsed as Record<string, unknown>, errors };
+}
+
+function upsertOpencodePlugin(opencodeConfigPath: string, pluginSpecifier: string): void {
+  let raw = "";
+  try {
+    raw = existsSync(opencodeConfigPath) ? readFileSync(opencodeConfigPath, "utf8") : "";
+  } catch {
+    raw = "";
+  }
+
+  if (raw.trim().length === 0) {
+    raw = `{\n  "$schema": "https://opencode.ai/config.json"\n}\n`;
+  }
+
+  const parsed = parseJsoncObject(raw);
+  if (!parsed.data) {
+    console.warn(
+      `[install-opencode] failed to parse ${opencodeConfigPath}; will only upsert 'plugin' field.`,
+    );
+  }
+
+  const currentPlugins = Array.isArray(parsed.data?.plugin)
+    ? (parsed.data?.plugin as unknown[]).filter((v) => typeof v === "string")
+    : [];
+  const nextPlugins = currentPlugins.includes(pluginSpecifier)
+    ? (currentPlugins as string[])
+    : [...(currentPlugins as string[]), pluginSpecifier];
+
+  const edits = modify(raw, ["plugin"], nextPlugins, {
+    formattingOptions: { insertSpaces: true, tabSize: 2, eol: "\n" },
+  });
+  const updated = applyEdits(raw, edits);
+  writeTextFile(opencodeConfigPath, updated, { mode: "always" });
+}
+
 function yamlQuote(value: string): string {
   // JSON string is valid YAML scalar in practice and handles escaping safely.
   return JSON.stringify(value);
@@ -145,6 +208,10 @@ function main() {
 
   writeFileSafe(pluginShimPath, pluginShim, options);
 
+  const pluginShimUrl = pathToFileURL(pluginShimPath).toString();
+  const opencodeConfigPath = detectOpencodeConfigPath(installRoot);
+  upsertOpencodePlugin(opencodeConfigPath, pluginShimUrl);
+
   const commands = loadBuiltinCommands();
   for (const def of Object.values(commands)) {
     const outPath = path.join(commandsDir, `${def.name}.md`);
@@ -174,6 +241,7 @@ function main() {
   console.log(`- target: ${options.target}`);
   console.log(`- opencode dir: ${installRoot}`);
   console.log(`- plugin shim: ${pluginShimPath}`);
+  console.log(`- opencode config: ${opencodeConfigPath}`);
   console.log(`- commands: ${commandsDir}`);
   console.log(`- skills: ${skillDir}`);
   console.log(`- config: ${novelConfigPath}`);

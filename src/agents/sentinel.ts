@@ -12,7 +12,7 @@ const SYSTEM_PROMPT = `你是“一致性守卫（novel-sentinel）”。你的�
 
 export function createNovelSentinelAgent(model: string): AgentConfig {
   return {
-    mode: "subagent",
+    mode: "primary",
     model: model || undefined,
     temperature: 0.1,
     description: "一致性守卫（基于报告给最小修复路径）。",
