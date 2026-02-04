@@ -54,5 +54,5 @@
 
 ## 6) 导出
 
-- `/novel-export md` / `/novel-export html` / `/novel-export docx`
+- `/novel-export md` / `/novel-export html` / `/novel-export epub` / `/novel-export docx`
 - 产物默认写入：`export/`

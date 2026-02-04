@@ -1,4 +1,4 @@
-export const NOVEL_EXPORT_TEMPLATE = `目标：导出编译（md/html）。
+export const NOVEL_EXPORT_TEMPLATE = `目标：导出编译（md/html/epub/docx）。
 
 步骤：
 1) 解析参数 format（md|html|epub|docx）

@@ -43,5 +43,5 @@ OpenCode 自定义命令会从以下位置加载：
 
 ## 导出
 
-- `/novel-export <md|html|epub|docx>`：导出（`novel_export`；当前支持 md/html/docx，epub 预留）
+- `/novel-export <md|html|epub|docx>`：导出（`novel_export`；当前支持 md/html/epub/docx）
 - `/novel-snapshot <tag>`：快照（模板说明）

@@ -9,6 +9,7 @@ import { buildFrontmatterFile, parseFrontmatter } from "../../shared/markdown/fr
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
 import { loadOrScan } from "../novel-scan/scan";
 import { markdownToDocxBytes } from "./docx";
+import { chaptersToEpubBytes } from "./epub";
 import { markdownToHtml, wrapHtmlDocument } from "./render";
 import type {
   NovelChapterOrder,
@@ -74,27 +75,6 @@ export function createNovelExportTool(deps: {
       const includeFrontmatter = args.includeFrontmatter ?? deps.config.export.includeFrontmatter;
       const writeFile = args.writeFile ?? true;
 
-      if (format === "epub") {
-        diagnostics.push({
-          severity: "error",
-          code: "EXPORT_FORMAT_NOT_IMPLEMENTED",
-          message: `暂不支持导出格式: ${format}（可后续接入 pandoc 或纯 JS 方案）。`,
-          suggestedFix: "请先使用 md / html / docx 导出。",
-        });
-        const resultJson: NovelExportResultJson = {
-          version: 1,
-          format,
-          chapters: [],
-          stats: { chapters: 0, durationMs: Date.now() - startedAt },
-          diagnostics,
-        };
-        return formatToolMarkdownOutput({
-          summaryLines: [`format: ${format}`, "status: failed"],
-          resultJson,
-          diagnostics,
-        });
-      }
-
       const scan = loadOrScan({
         projectRoot: deps.projectRoot,
         config: deps.config,
@@ -136,13 +116,9 @@ export function createNovelExportTool(deps: {
         ordered = [...picked, ...rest];
       }
 
-      const chapterInfos = ordered.map((c) => ({
-        chapter_id: c.chapter_id,
-        title: c.title,
-        path: c.path,
-      }));
-
       const mergedMdParts: string[] = [];
+      const titleById = new Map<string, string>();
+      const chaptersForEpub: { id: string; title: string; markdown: string }[] = [];
       for (const chapter of ordered) {
         const abs = fromRelativePosixPath(rootDir, chapter.path);
         if (!existsSync(abs)) {
@@ -163,21 +139,33 @@ export function createNovelExportTool(deps: {
         const titleForHeading =
           chapter.title ??
           (typeof parsed.data.title === "string" ? parsed.data.title : chapter.chapter_id);
+        titleById.set(chapter.chapter_id, titleForHeading);
         const bodyWithHeading = ensureChapterHeading(parsed.body, titleForHeading);
 
-        if (includeFrontmatter) {
-          const rebuilt = parsed.hasFrontmatter
+        const markdownFinal = includeFrontmatter
+          ? parsed.hasFrontmatter
             ? buildFrontmatterFile(parsed.data as Record<string, unknown>, bodyWithHeading)
-            : bodyWithHeading;
-          mergedMdParts.push(rebuilt.trimEnd());
-        } else {
-          mergedMdParts.push(bodyWithHeading.trimEnd());
-        }
+            : bodyWithHeading
+          : bodyWithHeading;
+
+        mergedMdParts.push(markdownFinal.trimEnd());
+        chaptersForEpub.push({
+          id: chapter.chapter_id,
+          title: titleForHeading,
+          markdown: markdownFinal,
+        });
       }
 
       const mergedMarkdown = `${mergedMdParts.join("\n\n---\n\n")}\n`;
 
-      const fileExt = format === "docx" ? "docx" : format === "html" ? "html" : "md";
+      const chapterInfos = ordered.map((c) => ({
+        chapter_id: c.chapter_id,
+        title: titleById.get(c.chapter_id) ?? c.title,
+        path: c.path,
+      }));
+
+      const fileExt =
+        format === "docx" ? "docx" : format === "html" ? "html" : format === "epub" ? "epub" : "md";
       const outputPathAbs = path.join(outputDir, `${slugifyTitle(title)}.${fileExt}`);
       const outputPathRel = toRelativePosixPath(rootDir, outputPathAbs);
 
@@ -192,6 +180,18 @@ export function createNovelExportTool(deps: {
             language: deps.config.language,
           });
           writeTextFile(outputPathAbs, html, { mode: "always" });
+        } else if (format === "epub") {
+          const bytes = chaptersToEpubBytes({
+            title,
+            language: deps.config.language,
+            chapters: chaptersForEpub.map((c) => ({
+              id: c.id,
+              title: c.title,
+              bodyHtml: markdownToHtml(c.markdown),
+            })),
+          });
+          ensureDirForFile(outputPathAbs);
+          await Bun.write(outputPathAbs, bytes);
         } else {
           const bytes = await markdownToDocxBytes(mergedMarkdown, { title });
           ensureDirForFile(outputPathAbs);

@@ -4,7 +4,7 @@
 
 ## 功能概览
 
-- Tools（`novel_*`）：扫描、索引、巡检、导出（md/html/docx）、上下文包、受控落盘等（见 `src/tools/`）
+- Tools（`novel_*`）：扫描、索引、巡检、导出（md/html/epub/docx）、上下文包、受控落盘等（见 `src/tools/`）
 - Commands（`/novel-*`）：OpenCode 自定义命令（见 `docs/commands.md`）
 - Skills：OpenCode Agent Skills（见 `docs/skills.md`）
 - Agents：插件在 `config` hook 中注入 `novel-muse` / `novel-editor` / `novel-sentinel`（可选 `full` 预设导出更多专家）

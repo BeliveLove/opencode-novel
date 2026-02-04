@@ -155,7 +155,7 @@ const BUILTIN_COMMANDS: Record<BuiltinCommandName, Omit<CommandDefinition, "name
     template: wrapTemplate(NOVEL_STYLE_CHECK_TEMPLATE),
   },
   "novel-export": {
-    description: "导出编译（md/html）。",
+    description: "导出编译（md/html/epub/docx）。",
     argumentHint: "<md|html|epub|docx>",
     template: wrapTemplate(NOVEL_EXPORT_TEMPLATE),
   },
