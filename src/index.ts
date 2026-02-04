@@ -14,6 +14,7 @@ import { createNovelImportTool } from "./tools/novel-import";
 import { createNovelIndexTool } from "./tools/novel-index";
 import { createNovelScaffoldTool } from "./tools/novel-scaffold";
 import { createNovelScanTool } from "./tools/novel-scan";
+import { createNovelSetupTool } from "./tools/novel-setup";
 import { createNovelStyleCheckTool } from "./tools/novel-style-check";
 import { createSkillTool } from "./tools/skill";
 import { createSlashcommandTool } from "./tools/slashcommand";
@@ -28,6 +29,7 @@ const NovelPlugin: Plugin = async (ctx) => {
   }
 
   const tools: Record<string, ToolDefinition> = {
+    novel_setup: createNovelSetupTool({ projectRoot: ctx.directory, config }),
     novel_scan: createNovelScanTool({ projectRoot: ctx.directory, config }),
     novel_scaffold: createNovelScaffoldTool({ projectRoot: ctx.directory, config }),
     novel_index: createNovelIndexTool({ projectRoot: ctx.directory, config }),

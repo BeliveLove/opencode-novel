@@ -7,6 +7,7 @@ import { applyEdits, modify, type ParseError, parse } from "jsonc-parser";
 import { loadBuiltinCommands } from "../src/features/builtin-commands/commands";
 import { loadBuiltinSkills } from "../src/features/builtin-skills/skills";
 import { normalizeLf, writeTextFile } from "../src/shared/fs/write";
+import { buildCommandMarkdown, buildSkillMarkdown } from "../src/shared/opencode/artifacts";
 
 type UninstallTarget = "global" | "project";
 
@@ -163,36 +164,6 @@ function upsertOpencodePluginRemoval(options: {
   }
 
   return { removed: true, skipped: false };
-}
-
-function yamlQuote(value: string): string {
-  return JSON.stringify(value);
-}
-
-function buildCommandMarkdown(def: {
-  description?: string;
-  agent?: string;
-  argumentHint?: string;
-  template: string;
-}): string {
-  const fm: string[] = ["---"];
-  if (def.description) fm.push(`description: ${yamlQuote(def.description)}`);
-  if (def.agent) fm.push(`agent: ${yamlQuote(def.agent)}`);
-  if (def.argumentHint) fm.push(`argument-hint: ${yamlQuote(def.argumentHint)}`);
-  fm.push("---", "");
-  return [...fm, def.template.trimEnd(), ""].join("\n");
-}
-
-function buildSkillMarkdown(def: { name: string; description: string; template: string }): string {
-  return [
-    "---",
-    `name: ${yamlQuote(def.name)}`,
-    `description: ${yamlQuote(def.description)}`,
-    "---",
-    "",
-    def.template.trimEnd(),
-    "",
-  ].join("\n");
 }
 
 function removeFileSafe(
