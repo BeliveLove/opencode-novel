@@ -3,6 +3,7 @@ import { extname, join, resolve } from "node:path";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { createSha256Hex } from "../../shared/hashing/sha256";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
@@ -202,7 +203,7 @@ export function scanNovelProject(deps: {
 
   for (const file of allFiles) {
     const stats = statSync(file.path);
-    const content = readFileSync(file.path, "utf8");
+    const content = readTextFileSync(file.path, { encoding: deps.config.encoding });
     const relPath = toRelativePosixPath(rootDir, file.path);
     const sha256 = createSha256Hex(content);
 

@@ -1,7 +1,8 @@
 import { z } from "zod";
+import { TEXT_ENCODINGS } from "../shared/strings/text-encoding";
 
 const NovelLanguageSchema = z.enum(["zh", "en"]).default("zh");
-const NovelEncodingSchema = z.enum(["utf8"]).default("utf8");
+const NovelEncodingSchema = z.enum(TEXT_ENCODINGS).default("auto");
 
 const StyleGuideSchema = z
   .object({

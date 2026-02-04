@@ -1,15 +1,17 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import picomatch from "picomatch";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { hash8 } from "../../shared/hashing/hash8";
 import { buildFrontmatterFile } from "../../shared/markdown/frontmatter";
 import { parseChineseNumber } from "../../shared/strings/chinese-number";
 import { slugify } from "../../shared/strings/slug";
+import { TEXT_ENCODINGS } from "../../shared/strings/text-encoding";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
 import { ensureNovelScaffold } from "../novel-scaffold/scaffold";
 import type {
@@ -213,6 +215,7 @@ export function createNovelImportTool(deps: {
       fromDir: tool.schema.string().optional(),
       mode: tool.schema.enum(["copy", "analyze"]).optional(),
       manuscriptDir: tool.schema.string().optional(),
+      encoding: tool.schema.enum(TEXT_ENCODINGS).optional(),
       includeGlobs: tool.schema.array(tool.schema.string()).optional(),
       excludeGlobs: tool.schema.array(tool.schema.string()).optional(),
       writeConfigJsonc: tool.schema.boolean().optional(),
@@ -226,6 +229,7 @@ export function createNovelImportTool(deps: {
       const fromDir = path.resolve(args.fromDir ?? deps.projectRoot);
       const manuscriptDirName = args.manuscriptDir ?? deps.config.manuscriptDir;
       const mode: NovelImportMode = args.mode ?? deps.config.import.defaultMode;
+      const encoding = args.encoding ?? deps.config.encoding;
       const writeConfigJsonc = args.writeConfigJsonc ?? true;
       const writeReport = args.writeReport ?? true;
 
@@ -290,7 +294,7 @@ export function createNovelImportTool(deps: {
       for (const absPath of sourceFiles) {
         let raw: string;
         try {
-          raw = readFileSync(absPath, "utf8");
+          raw = readTextFileSync(absPath, { encoding });
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           diagnostics.push({

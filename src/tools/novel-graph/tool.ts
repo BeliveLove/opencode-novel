@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
@@ -18,12 +19,13 @@ function parseExplicitRelations(
   entityPaths: Array<{ id: string; path: string }>,
   fieldName: string,
   diagnostics: Diagnostic[],
+  encoding: NovelConfig["encoding"],
 ): Relation[] {
   const relations: Relation[] = [];
   for (const entity of entityPaths) {
     const abs = fromRelativePosixPath(rootDir, entity.path);
     if (!existsSync(abs)) continue;
-    const content = readFileSync(abs, "utf8");
+    const content = readTextFileSync(abs, { encoding });
     const parsed = parseFrontmatter<Record<string, unknown>>(content, {
       file: entity.path,
       strict: false,
@@ -105,7 +107,7 @@ export function createNovelGraphTool(deps: {
         const entityPaths = scan.entities.characters.map((c) => ({ id: c.id, path: c.path }));
 
         const explicit = preferExplicitRelations
-          ? parseExplicitRelations(rootDir, entityPaths, "relationships", diagnostics)
+          ? parseExplicitRelations(rootDir, entityPaths, "relationships", diagnostics, deps.config.encoding)
           : [];
 
         if (explicit.length > 0) {
@@ -141,7 +143,7 @@ export function createNovelGraphTool(deps: {
         }
       } else {
         const entityPaths = scan.entities.factions.map((f) => ({ id: f.id, path: f.path }));
-        const explicit = parseExplicitRelations(rootDir, entityPaths, "relationships", diagnostics);
+        const explicit = parseExplicitRelations(rootDir, entityPaths, "relationships", diagnostics, deps.config.encoding);
 
         const nodeIds = new Set<string>(scan.entities.factions.map((f) => f.id));
         nodes = Array.from(nodeIds)

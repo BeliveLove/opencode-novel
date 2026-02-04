@@ -1,4 +1,5 @@
 import type { Diagnostic } from "../../shared/errors/diagnostics";
+import type { TextEncoding } from "../../shared/strings/text-encoding";
 
 export type NovelImportMode = "copy" | "analyze";
 
@@ -7,6 +8,7 @@ export type NovelImportArgs = {
   fromDir?: string;
   mode?: NovelImportMode;
   manuscriptDir?: string;
+  encoding?: TextEncoding;
   includeGlobs?: string[];
   excludeGlobs?: string[];
   writeConfigJsonc?: boolean;

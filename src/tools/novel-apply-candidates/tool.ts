@@ -4,6 +4,7 @@ import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { buildFrontmatterFile, parseFrontmatter } from "../../shared/markdown/frontmatter";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
@@ -239,7 +240,7 @@ export function createNovelApplyCandidatesTool(deps: {
             continue;
           }
 
-          const content = readFileSync(abs, "utf8");
+          const content = readTextFileSync(abs, { encoding: deps.config.encoding });
           const parsedFm = parseFrontmatter<Record<string, unknown>>(content, {
             file: rel,
             strict: false,

@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic, DiagnosticEvidence } from "../../shared/errors/diagnostics";
 import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
@@ -112,7 +113,7 @@ export function createNovelStyleCheckTool(deps: {
       for (const chapter of chapters) {
         const abs = fromRelativePosixPath(rootDir, chapter.path);
         if (!existsSync(abs)) continue;
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: deps.config.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: chapter.path,
           strict: false,
@@ -139,7 +140,7 @@ export function createNovelStyleCheckTool(deps: {
       for (const character of scan.entities.characters) {
         const abs = fromRelativePosixPath(rootDir, character.path);
         if (!existsSync(abs)) continue;
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: deps.config.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: character.path,
           strict: false,
@@ -160,7 +161,7 @@ export function createNovelStyleCheckTool(deps: {
           .map((c) => {
             const absPath = fromRelativePosixPath(rootDir, c.path);
             if (!existsSync(absPath)) return "";
-            const text = readFileSync(absPath, "utf8");
+            const text = readTextFileSync(absPath, { encoding: deps.config.encoding });
             const p = parseFrontmatter<Record<string, unknown>>(text, {
               file: c.path,
               strict: false,

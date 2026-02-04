@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
@@ -29,10 +30,11 @@ function readThreadMeta(
   rootDir: string,
   threadPath: string,
   diagnostics: Diagnostic[],
+  encoding: NovelConfig["encoding"],
 ): ThreadMeta {
   const abs = fromRelativePosixPath(rootDir, threadPath);
   if (!existsSync(abs)) return {};
-  const content = readFileSync(abs, "utf8");
+  const content = readTextFileSync(abs, { encoding });
   const parsed = parseFrontmatter<Record<string, unknown>>(content, {
     file: threadPath,
     strict: false,
@@ -97,7 +99,7 @@ export function createNovelForeshadowingAuditTool(deps: {
 
       const items: ThreadAuditItem[] = [];
       const threadsReport = scan.entities.threads.map((t) => {
-        const meta = readThreadMeta(rootDir, t.path, diagnostics);
+        const meta = readThreadMeta(rootDir, t.path, diagnostics, deps.config.encoding);
         return { ...t, ...meta };
       });
 

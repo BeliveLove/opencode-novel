@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { normalizeLf, writeTextFile } from "../../shared/fs/write";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
@@ -161,7 +162,7 @@ export function createNovelContextPackTool(deps: {
         );
         const derivedSummaryAbs = path.join(rootDir, derivedSummaryRel.replaceAll("/", path.sep));
         if (existsSync(derivedSummaryAbs)) {
-          const content = readFileSync(derivedSummaryAbs, "utf8");
+          const content = readTextFileSync(derivedSummaryAbs);
           addSection(
             derivedSummaryRel,
             "bible summary (derived)",
@@ -171,7 +172,7 @@ export function createNovelContextPackTool(deps: {
           const worldRel = `${manuscriptDirName}/bible/world.md`;
           const worldAbs = path.join(rootDir, worldRel.replaceAll("/", path.sep));
           if (existsSync(worldAbs)) {
-            const content = readFileSync(worldAbs, "utf8");
+            const content = readTextFileSync(worldAbs, { encoding: deps.config.encoding });
             addSection(worldRel, "bible world.md", `## World Bible\n\n${content.slice(0, 2000)}\n`);
           }
         }
@@ -187,7 +188,7 @@ export function createNovelContextPackTool(deps: {
         if (!chapter) return;
         const abs = fromRelativePosixPath(rootDir, chapter.path);
         if (!existsSync(abs)) return;
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: deps.config.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: chapter.path,
           strict: false,
@@ -213,7 +214,7 @@ export function createNovelContextPackTool(deps: {
         if (!character) return;
         const abs = fromRelativePosixPath(rootDir, character.path);
         if (!existsSync(abs)) return;
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: deps.config.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: character.path,
           strict: false,
@@ -239,7 +240,7 @@ export function createNovelContextPackTool(deps: {
         if (!thread) return;
         const abs = fromRelativePosixPath(rootDir, thread.path);
         if (!existsSync(abs)) return;
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: deps.config.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: thread.path,
           strict: false,

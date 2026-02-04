@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
 import { renderBibleSummaryMd, renderGlossaryMd } from "./render";
@@ -131,7 +132,7 @@ export function createNovelBibleTool(deps: {
         const abs = path.join(manuscriptBibleDir, name);
         if (!existsSync(abs)) continue;
         const rel = toRelativePosixPath(rootDir, abs);
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: deps.config.encoding });
         rules.push(...parseRulesFromFile({ relPath: rel, content, diagnostics }));
         glossary.push(...parseGlossaryFromFile({ relPath: rel, content, diagnostics }));
       }

@@ -4,6 +4,7 @@ import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic, DiagnosticEvidence } from "../../shared/errors/diagnostics";
 import { fromRelativePosixPath, toRelativePosixPath } from "../../shared/fs/paths";
+import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
@@ -17,6 +18,7 @@ import type {
 } from "./types";
 
 type RuleContext = {
+  encoding: NovelConfig["encoding"];
   scan: ReturnType<typeof loadOrScan>;
   chaptersById: Array<{
     chapter_id: string;
@@ -251,7 +253,7 @@ const RULES: Rule[] = [
       for (const thread of ctx.scan.entities.threads) {
         const abs = fromRelativePosixPath(ctx.scan.rootDir, thread.path);
         if (!existsSync(abs)) continue;
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: ctx.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: thread.path,
           strict: false,
@@ -292,7 +294,7 @@ const RULES: Rule[] = [
       for (const thread of ctx.scan.entities.threads) {
         const abs = fromRelativePosixPath(ctx.scan.rootDir, thread.path);
         if (!existsSync(abs)) continue;
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: ctx.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: thread.path,
           strict: false,
@@ -333,7 +335,7 @@ const RULES: Rule[] = [
       for (const chapter of ctx.chaptersById) {
         const abs = fromRelativePosixPath(ctx.scan.rootDir, chapter.path);
         if (!existsSync(abs)) continue;
-        const content = readFileSync(abs, "utf8");
+        const content = readTextFileSync(abs, { encoding: ctx.encoding });
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: chapter.path,
           strict: false,
@@ -424,6 +426,7 @@ export function createNovelContinuityCheckTool(deps: {
       const bibleRuleIds = loadBibleRuleIds(rootDir, deps.config);
 
       const ctx: RuleContext = {
+        encoding: deps.config.encoding,
         scan,
         chaptersById,
         strictMode,
