@@ -3,6 +3,7 @@ import { loadNovelConfig } from "./config/load";
 import { createConfigHandler } from "./plugin-handlers";
 import { createNovelApplyCandidatesTool } from "./tools/novel-apply-candidates";
 import { createNovelBibleTool } from "./tools/novel-bible";
+import { createNovelBootstrapTool } from "./tools/novel-bootstrap";
 import { createNovelCharacterReportTool } from "./tools/novel-character-report";
 import { createNovelContextPackTool } from "./tools/novel-context-pack";
 import { createNovelContinuityCheckTool } from "./tools/novel-continuity-check";
@@ -30,6 +31,7 @@ const NovelPlugin: Plugin = async (ctx) => {
 
   const tools: Record<string, ToolDefinition> = {
     novel_setup: createNovelSetupTool({ projectRoot: ctx.directory, config }),
+    novel_bootstrap: createNovelBootstrapTool({ projectRoot: ctx.directory, config }),
     novel_scan: createNovelScanTool({ projectRoot: ctx.directory, config }),
     novel_scaffold: createNovelScaffoldTool({ projectRoot: ctx.directory, config }),
     novel_index: createNovelIndexTool({ projectRoot: ctx.directory, config }),
