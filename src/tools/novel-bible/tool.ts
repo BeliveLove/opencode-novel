@@ -38,7 +38,7 @@ function parseRulesFromFile(options: {
       continue;
     }
 
-    const listItem = line.match(/^\s*(?:-|\d+\\.)\s+(.+)$/);
+    const listItem = line.match(/^\s*(?:-|\d+\.)\s+(.+)$/);
     if (listItem) {
       const id = `R-AUTO-${autoIndex}`;
       autoIndex += 1;
