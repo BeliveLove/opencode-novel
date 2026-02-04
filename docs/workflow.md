@@ -1,6 +1,6 @@
-# 工作流（从 0 到 1 写完一章）
+# 工作流（OpenCode TUI：从 0 到 1 写完一章）
 
-> 建议把小说工程放在一个独立目录中，OpenCode 打开该目录后加载本插件。
+> 这是一个纯命令式/TUI 工作流：你只需要在 OpenCode 中打开小说工程目录，然后输入 `/novel-*` 命令即可。
 
 ## 0) 安装（一次性）
 
@@ -23,11 +23,12 @@
 ## 2) 导入（可选）
 
 已有草稿目录可用：
-- `novel_import`（不改原文，默认按章节标题拆分，写入 `manuscript/chapters/*.md`）
+- `/novel-import`（不改原文，默认按章节标题拆分，写入 `manuscript/chapters/*.md`）
 - 然后运行：`/novel-index`
 
 ## 3) 索引与巡检
 
+- `/novel-index`：生成派生索引（建议写作前/导出前都跑一次）
 - `novel_index`：生成派生索引
   - `.opencode/novel/INDEX.md`
   - `.opencode/novel/TIMELINE.md`
@@ -44,6 +45,10 @@
 2) `/novel-chapter-draft <chapter_id>`（生成草稿，默认写新文件）
 3) `/novel-chapter-review <chapter_id>`（审稿，最小改动建议）
 4) `/novel-polish <chapter_id>`（润色，默认写新文件）
+
+落盘原则（重要）：
+- 默认不覆盖原章：草稿/润色/重写会写入新文件（如 `.draft.md` / `.polish.md`），避免误伤你的正文。
+- 需要覆盖或批量落盘时，必须显式确认（例如 candidates 的 dryRun→apply 流程）。
 
 ## 5) 抽取实体候选 → 受控落盘（可选）
 

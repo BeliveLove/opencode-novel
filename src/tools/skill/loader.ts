@@ -6,6 +6,13 @@ import { loadBuiltinSkills } from "../../features/builtin-skills";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
 import type { LoadedSkill, SkillScope } from "./types";
 
+function getGlobalOpencodeDirs(): string[] {
+  const homePrimary = path.join(homedir(), ".config", "opencode");
+  const appData = process.env.APPDATA ? path.join(process.env.APPDATA, "opencode") : undefined;
+  // Preference: `~/.config/opencode` wins over `%APPDATA%/opencode` (fallback).
+  return [...(appData ? [appData] : []), homePrimary];
+}
+
 function extractSkillInstruction(template: string): string {
   const match = template.match(/<skill-instruction>([\s\S]*?)<\/skill-instruction>/);
   return match ? match[1].trim() : template.trim();
@@ -100,10 +107,20 @@ export function discoverAllSkills(options: {
     },
   }));
 
-  const projectSkillsDir = path.join(options.projectRoot, ".opencode", "skills");
-  const userSkillsDir = path.join(homedir(), ".config", "opencode", "skills");
-  const projectSkills = discoverSkillsFromDir(projectSkillsDir, "project");
-  const userSkills = discoverSkillsFromDir(userSkillsDir, "user");
+  // Compatibility: support both legacy `.opencode/skills` and official `.opencode/skill`
+  // Preference: official wins if both exist.
+  const projectSkillDirs = [
+    path.join(options.projectRoot, ".opencode", "skills"),
+    path.join(options.projectRoot, ".opencode", "skill"),
+  ];
+  const globalDirs = getGlobalOpencodeDirs();
+  const userSkillDirs = globalDirs.flatMap((root) => [
+    path.join(root, "skills"),
+    path.join(root, "skill"),
+  ]);
+
+  const projectSkills = projectSkillDirs.flatMap((d) => discoverSkillsFromDir(d, "project"));
+  const userSkills = userSkillDirs.flatMap((d) => discoverSkillsFromDir(d, "user"));
 
   // Merge strategy: project overrides builtin; user overrides project (last wins)
   const map = new Map<string, LoadedSkill>();

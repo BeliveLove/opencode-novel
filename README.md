@@ -1,24 +1,30 @@
 # opencode-novel
 
-把“写小说”工程化为 OpenCode 插件（Bun/TypeScript），提供可复用的 Tools / Commands / Skills，并以项目内 Markdown 作为事实来源，自动生成索引与巡检报告。
+面向大众作者的 **OpenCode TUI** 小说创作工具（插件）：用 `/novel-*` 命令把写作流程工程化，并以项目内 Markdown（事实源）自动生成索引与巡检报告（时间线/一致性/伏笔对账/导出）。
+
+> 本项目只做 OpenCode 的命令式/TUI 工作流，不走 Web/小程序路线。
 
 ## 功能概览
 
-- Tools（`novel_*`）：扫描、索引、巡检、导出（md/html/epub/docx）、上下文包、受控落盘等（见 `src/tools/`）
-- Commands（`/novel-*`）：OpenCode 自定义命令（见 `docs/commands.md`）
-- Skills：OpenCode Agent Skills（见 `docs/skills.md`）
-- Agents：插件在 `config` hook 中注入 `novel-muse` / `novel-editor` / `novel-sentinel`（可选 `full` 预设导出更多专家）
+- `/novel-*`：面向作者的写作流程命令（初始化、导入、索引、写章、巡检、导出）
+- `novel_*` tools：确定性工具内核（扫描/索引/一致性/伏笔对账/导出/受控落盘）
+- `novel-*` skills：专家提示词库（人物/势力/续写/润色/摘要等）
+- `novel-*` agents：在 OpenCode 配置中自动注入（默认 `novel-sentinel` 可见，其余可选）
 
-## 本地调试（Windows 示例）
+## 快速开始（作者视角）
 
-1. 构建：
+1) 安装插件（一次性；Windows 示例）：
    - `bun install`
    - `bun run build`
-2. 安装到 OpenCode（推荐）：
    - `bun run script/install-opencode.ts -- --target=global`
-   - 重启 OpenCode（插件与自定义命令/技能会自动生效）
-3. 卸载（可选）：
-   - `bun run uninstall:opencode`
+   - 重启 OpenCode
+
+2) 在 OpenCode 打开你的小说工程目录，然后按顺序运行：
+   - `/novel-init "书名"`（建骨架）
+   - `/novel-index`（生成索引/报告）
+   - `/novel-chapter-plan ch0001`（章节计划）
+   - `/novel-chapter-draft ch0001`（生成草稿，默认写新文件）
+   - `/novel-export docx`（导出）
 
 ## 配置
 

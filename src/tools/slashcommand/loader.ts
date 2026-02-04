@@ -6,6 +6,13 @@ import { loadBuiltinCommands } from "../../features/builtin-commands";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
 import type { CommandInfo, CommandScope } from "./types";
 
+function getGlobalOpencodeDirs(): string[] {
+  const homePrimary = path.join(homedir(), ".config", "opencode");
+  const appData = process.env.APPDATA ? path.join(process.env.APPDATA, "opencode") : undefined;
+  // Preference: `~/.config/opencode` wins over `%APPDATA%/opencode` (fallback).
+  return [...(appData ? [appData] : []), homePrimary];
+}
+
 function isMarkdownFile(fileName: string): boolean {
   return fileName.toLowerCase().endsWith(".md");
 }
@@ -64,11 +71,20 @@ export function discoverAllCommands(options: {
     content: c.template,
   }));
 
-  const projectDir = path.join(options.projectRoot, ".opencode", "command");
-  const userDir = path.join(homedir(), ".config", "opencode", "command");
+  // Compatibility: support both legacy `.opencode/command` and official `.opencode/commands`
+  // Preference: official wins if both exist.
+  const projectDirs = [
+    path.join(options.projectRoot, ".opencode", "command"),
+    path.join(options.projectRoot, ".opencode", "commands"),
+  ];
+  const globalDirs = getGlobalOpencodeDirs();
+  const userDirs = globalDirs.flatMap((root) => [
+    path.join(root, "command"),
+    path.join(root, "commands"),
+  ]);
 
-  const projectCommands = discoverCommandsFromDir(projectDir, "project");
-  const userCommands = discoverCommandsFromDir(userDir, "user");
+  const projectCommands = projectDirs.flatMap((d) => discoverCommandsFromDir(d, "project"));
+  const userCommands = userDirs.flatMap((d) => discoverCommandsFromDir(d, "user"));
 
   const map = new Map<string, CommandInfo>();
   for (const cmd of builtinCommands) map.set(cmd.name.toLowerCase(), cmd);

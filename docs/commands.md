@@ -3,9 +3,16 @@
 OpenCode 自定义命令会从以下位置加载：
 
 - 全局：`~/.config/opencode/commands/*.md`
+- 全局（Windows 兼容）：`%APPDATA%\\opencode\\commands\\*.md`
 - 项目：`<project>/.opencode/commands/*.md`
 
 本仓库提供一套 `/novel-*` 命令模板，可用 `bun run script/install-opencode.ts -- --target=global` 一键安装到全局目录。
+
+兼容说明（旧路径仍支持）：
+- 全局：`~/.config/opencode/command/*.md`、`%APPDATA%\\opencode\\command\\*.md`
+- 项目：`<project>/.opencode/command/*.md`
+
+覆盖规则（同名命令）：项目级 > 全局级；官方目录（`commands/`）> 旧目录（`command/`）。
 
 ## 初始化与工程
 

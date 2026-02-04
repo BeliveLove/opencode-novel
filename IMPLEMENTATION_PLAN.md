@@ -185,7 +185,7 @@ novel/
   - （可选）发现 project/user skills：`discover...` → `mergeSkills(...)`
   - 注册 `skill` 工具（让用户/命令可以调用 skill）
 - 加载 commands：
-  - builtin commands（模板）+ project commands（`.opencode/command`）
+  - builtin commands（模板）+ project commands（推荐：`.opencode/commands`；兼容旧：`.opencode/command`）
 - 注册 `slashcommand` 工具（让用户通过 `/novel-*` 使用命令）
 - Hooks（轻量）：
   - `auto-slash-command`：建议命令，不做重活
@@ -211,7 +211,7 @@ novel/
 - 任何 **novel_** 前缀工具不会与 oh-my-opencode 冲突（其工具名不使用该前缀）。
 - `slashcommand` / `skill` / `skill_mcp` 这类“通用工具名”若你希望与 oh-my-opencode 共存，必须可配置关闭：
   - 本插件配置增加：`compat.export_slashcommand_tool`、`compat.export_skill_tool`（默认 true；共存时手动设为 false）
-  - 关闭后：你依赖 OpenCode/其他插件提供的 `slashcommand/skill` 工具来加载 `.opencode/command` 与 `.opencode/skills`
+  - 关闭后：你依赖 OpenCode/其他插件提供的 `slashcommand/skill` 工具来加载 `.opencode/commands` 与 `.opencode/skill`（兼容旧：`.opencode/command` 与 `.opencode/skills`）
 
 ### 3.3 插件对 OpenCode 的输出形态（实现者按此写）
 
@@ -717,14 +717,14 @@ export type Diagnostic = {
 - `.opencode/novel/cache/last-run.json`：存最近一次运行的版本、时间、参数摘要
 
 #### 6.0.6 可选“通用工作流工具”（与 oh-my-opencode 同款）
-> 用于加载 `.opencode/command` 与 `.opencode/skills` 并把模板返回给模型。若与 oh-my-opencode 共存冲突，可用 `compat.export_*` 关闭。
+> 用于加载项目/全局的 commands/skills 模板并把模板返回给模型。推荐使用 `.opencode/commands` 与 `.opencode/skill`；兼容旧路径 `.opencode/command` 与 `.opencode/skills`。若与 oh-my-opencode 共存冲突，可用 `compat.export_*` 关闭。
 
 - `slashcommand`（若启用）：
-  - 搜索命令目录优先级（建议与 oh-my-opencode 一致）：builtin → `.opencode/command` → `.claude/commands` → `~/.config/opencode/command` → `~/.config/claude/commands`
+  - 搜索命令目录优先级：builtin → `<project>/.opencode/command`（旧）→ `<project>/.opencode/commands`（推荐）→ `%APPDATA%/opencode/command`（旧）→ `%APPDATA%/opencode/commands`（推荐）→ `~/.config/opencode/command`（旧）→ `~/.config/opencode/commands`（推荐）
   - 解析 frontmatter（字段：`description`、`argument-hint`、`model`、`agent`、`subtask`）
   - 输出：格式化后的 “命令说明 + 已替换的参数 + resolved file refs”
 - `skill`（若启用）：
-  - 搜索技能目录优先级：builtin → `.opencode/skills` → `~/.config/opencode/skills` → `.claude/skills`
+  - 搜索技能目录优先级：builtin → `<project>/.opencode/skills`（旧）→ `<project>/.opencode/skill`（推荐）→ `%APPDATA%/opencode/skills`（旧）→ `%APPDATA%/opencode/skill`（推荐）→ `~/.config/opencode/skills`（旧）→ `~/.config/opencode/skill`（推荐）
   - 解析 `SKILL.md` frontmatter（字段：`name`、`description`、`argumentHint`、`agent`）
   - 输出：技能正文（优先抽取 `<skill-instruction>...</skill-instruction>`）
 
@@ -1859,7 +1859,7 @@ Commands 是“工作流”，必须产出明确文件或报告，并尽量由 t
 
 目标：像 oh-my-opencode 一样支持多来源：
 - builtin：插件内置
-- project：项目目录 `.opencode/command`、`.opencode/skills`
+- project：项目目录 `.opencode/commands`、`.opencode/skill`（兼容旧：`.opencode/command`、`.opencode/skills`）
 - user/global：用户级 skills（若 OpenCode 支持）
 
 合并策略：
