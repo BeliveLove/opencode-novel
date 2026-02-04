@@ -16,7 +16,7 @@ describe("novel_apply_candidates", () => {
         `---
 chapter_id: ch0001
 title: "第一章"
-characters: []
+characters: [char-old]
 ---
 
 # 第一章
@@ -57,7 +57,62 @@ characters: []
         "utf8",
       );
       expect(chapter).toContain("characters:");
+      expect(chapter).toContain("char-old");
       expect(chapter).toContain("char-new");
+    });
+  });
+
+  it("supports array ops (append_unique/remove) without overwriting existing lists", async () => {
+    await withTempDir(async (rootDir) => {
+      const config = NovelConfigSchema.parse({ projectRoot: rootDir });
+
+      writeFixtureFile(
+        rootDir,
+        "manuscript/chapters/ch0001.md",
+        `---
+chapter_id: ch0001
+title: "第一章"
+characters: [char-keep, char-remove]
+---
+
+# 第一章
+`,
+      );
+
+      const candidatesPath = ".opencode/novel/cache/candidates.json";
+      writeFixtureFile(
+        rootDir,
+        candidatesPath,
+        JSON.stringify(
+          {
+            version: 1,
+            generatedAt: "2026-02-03T00:00:00Z",
+            scope: { kind: "chapter", chapter_id: "ch0001" },
+            ops: [
+              {
+                op: "patch_frontmatter",
+                filePath: "manuscript/chapters/ch0001.md",
+                patch: {
+                  characters: { $op: "remove", values: ["char-remove"] },
+                },
+              },
+            ],
+          },
+          null,
+          2,
+        ),
+      );
+
+      const tool = createNovelApplyCandidatesTool({ projectRoot: rootDir, config });
+      await executeTool(tool, { rootDir, candidatesPath, dryRun: false, writeReport: false });
+
+      const chapter = readFileSync(
+        path.join(rootDir, "manuscript", "chapters", "ch0001.md"),
+        "utf8",
+      );
+      expect(chapter).toContain("char-keep");
+      expect(chapter).not.toContain("char-remove");
+      expect(chapter).not.toContain("$op");
     });
   });
 });

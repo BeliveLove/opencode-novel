@@ -22,17 +22,171 @@ function isPlainObject(value: unknown): value is PlainObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function deepMerge(base: unknown, override: unknown): unknown {
-  if (override === undefined) return base;
-  if (Array.isArray(base) && Array.isArray(override)) return override;
-  if (isPlainObject(base) && isPlainObject(override)) {
-    const out: PlainObject = { ...base };
-    for (const [k, v] of Object.entries(override)) {
-      out[k] = deepMerge((base as PlainObject)[k], v);
+type PatchMode = "deep_merge" | "shallow_merge";
+type PatchOpName = "append_unique" | "remove" | "set";
+type PatchOp = { $op: PatchOpName; values?: unknown[]; value?: unknown };
+
+function normalizePatchMode(mode: unknown): PatchMode {
+  if (mode === "replace" || mode === "shallow_merge") return "shallow_merge";
+  return "deep_merge";
+}
+
+function isPatchOp(value: unknown): value is PatchOp {
+  if (!isPlainObject(value)) return false;
+  const op = (value as PlainObject).$op;
+  return op === "append_unique" || op === "remove" || op === "set";
+}
+
+function mergeStringArraysUnique(base: string[], add: string[]): string[] {
+  const out: string[] = [...base];
+  const seen = new Set(base);
+  for (const value of add) {
+    if (seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+  }
+  return out;
+}
+
+function mergeArrays(base: unknown[], override: unknown[]): unknown[] {
+  const baseStrings = base.every((v) => typeof v === "string");
+  const overrideStrings = override.every((v) => typeof v === "string");
+  if (baseStrings && overrideStrings) {
+    return mergeStringArraysUnique(base as string[], override as string[]);
+  }
+  // For arrays of objects, default to override to avoid surprising de-dup semantics.
+  return override;
+}
+
+function applyPatchOp(options: {
+  current: unknown;
+  op: PatchOp;
+  diagnostics: Diagnostic[];
+  file: string;
+  keyPath: string;
+}): unknown {
+  const location = options.keyPath.length > 0 ? options.keyPath : "<root>";
+
+  if (options.op.$op === "set") {
+    if (!("value" in options.op)) {
+      options.diagnostics.push({
+        severity: "warn",
+        code: "APPLY_PATCH_OP_INVALID",
+        message: `patch op=set 缺少 value: ${location}`,
+        file: options.file,
+      });
+      return options.current;
+    }
+    return options.op.value;
+  }
+
+  if (!Array.isArray(options.op.values)) {
+    options.diagnostics.push({
+      severity: "warn",
+      code: "APPLY_PATCH_OP_INVALID",
+      message: `patch op=${options.op.$op} 缺少 values[]: ${location}`,
+      file: options.file,
+    });
+    return options.current;
+  }
+
+  const values = options.op.values;
+  if (options.op.$op === "append_unique") {
+    const base = Array.isArray(options.current) ? options.current : [];
+    if (options.current !== undefined && !Array.isArray(options.current)) {
+      options.diagnostics.push({
+        severity: "warn",
+        code: "APPLY_PATCH_OP_TYPE_MISMATCH",
+        message: `patch op=append_unique 期望数组，但当前是 ${typeof options.current}: ${location}`,
+        file: options.file,
+      });
+    }
+    return mergeArrays(base, values);
+  }
+
+  // remove
+  if (!Array.isArray(options.current)) {
+    options.diagnostics.push({
+      severity: "warn",
+      code: "APPLY_PATCH_OP_TYPE_MISMATCH",
+      message: `patch op=remove 期望数组，但当前不是数组: ${location}`,
+      file: options.file,
+    });
+    return options.current;
+  }
+
+  const base = options.current;
+  const baseStrings = base.every((v) => typeof v === "string");
+  const valuesStrings = values.every((v) => typeof v === "string");
+  if (baseStrings && valuesStrings) {
+    const toRemove = new Set(values as string[]);
+    return (base as string[]).filter((v) => !toRemove.has(v));
+  }
+
+  return base.filter((v) => !values.includes(v));
+}
+
+function mergeDeep(options: {
+  current: unknown;
+  patch: unknown;
+  diagnostics: Diagnostic[];
+  file: string;
+  keyPath: string[];
+}): unknown {
+  if (options.patch === undefined) return options.current;
+
+  if (isPatchOp(options.patch)) {
+    return applyPatchOp({
+      current: options.current,
+      op: options.patch,
+      diagnostics: options.diagnostics,
+      file: options.file,
+      keyPath: options.keyPath.join("."),
+    });
+  }
+
+  if (Array.isArray(options.current) && Array.isArray(options.patch)) {
+    return mergeArrays(options.current, options.patch);
+  }
+
+  if (isPlainObject(options.current) && isPlainObject(options.patch)) {
+    const out: PlainObject = { ...options.current };
+    for (const [k, v] of Object.entries(options.patch)) {
+      out[k] = mergeDeep({
+        current: (options.current as PlainObject)[k],
+        patch: v,
+        diagnostics: options.diagnostics,
+        file: options.file,
+        keyPath: [...options.keyPath, k],
+      });
     }
     return out;
   }
-  return override;
+
+  return options.patch;
+}
+
+function mergeShallow(options: {
+  current: PlainObject;
+  patch: PlainObject;
+  diagnostics: Diagnostic[];
+  file: string;
+}): PlainObject {
+  const out: PlainObject = { ...options.current };
+  for (const [k, v] of Object.entries(options.patch)) {
+    if (isPatchOp(v)) {
+      out[k] = applyPatchOp({
+        current: options.current[k],
+        op: v,
+        diagnostics: options.diagnostics,
+        file: options.file,
+        keyPath: k,
+      });
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
 }
 
 function parseCandidates(raw: string): { data: NovelCandidatesV1 | null; error?: string } {
@@ -247,10 +401,18 @@ export function createNovelApplyCandidatesTool(deps: {
           });
 
           const currentData = isPlainObject(parsedFm.data) ? (parsedFm.data as PlainObject) : {};
+          const mode = normalizePatchMode(op.mode);
+          const patch = op.patch as PlainObject;
           const nextData =
-            op.mode === "replace"
-              ? { ...currentData, ...(op.patch as PlainObject) }
-              : (deepMerge(currentData, op.patch) as PlainObject);
+            mode === "shallow_merge"
+              ? mergeShallow({ current: currentData, patch, diagnostics, file: rel })
+              : (mergeDeep({
+                  current: currentData,
+                  patch,
+                  diagnostics,
+                  file: rel,
+                  keyPath: [],
+                }) as PlainObject);
 
           const rebuilt = buildFrontmatterFile(nextData, parsedFm.body);
 

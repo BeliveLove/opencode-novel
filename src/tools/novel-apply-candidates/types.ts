@@ -20,7 +20,7 @@ export type CandidateOp =
       op: "patch_frontmatter";
       filePath: string;
       patch: Record<string, unknown>;
-      mode?: "merge" | "replace";
+      mode?: "deep_merge" | "shallow_merge" | "merge" | "replace";
     };
 
 export type NovelApplyCandidatesArgs = {
