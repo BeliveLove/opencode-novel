@@ -20,23 +20,30 @@ export function parseFrontmatter<T extends Record<string, unknown>>(
   const diagnostics: Diagnostic[] = [];
   const normalized = normalizeLf(content);
 
-  if (!normalized.startsWith("---\n")) {
-    return { data: {}, body: normalized, hasFrontmatter: false, diagnostics };
+  const withoutBom = normalized.startsWith("\uFEFF") ? normalized.slice(1) : normalized;
+
+  // Allow UTF-8 BOM + leading blank lines before the frontmatter marker.
+  // This avoids surprising "missing id" diagnostics when users copy/paste markdown from editors.
+  const fmMatch =
+    /^(?:[ \t]*\n)*---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/.exec(withoutBom);
+
+  if (!fmMatch) {
+    // If it looks like frontmatter started but never ended, emit a helpful diagnostic.
+    const trimmedStart = withoutBom.replace(/^(?:[ \t]*\n)*/, "");
+    if (/^---[ \t]*(?:\n|$)/.test(trimmedStart)) {
+      diagnostics.push({
+        severity: options?.strict ? "error" : "warn",
+        code: "PARSE_FRONTMATTER",
+        message: "Frontmatter 缺少结束标记 (---)。",
+        file: options?.file,
+      });
+    }
+
+    return { data: {}, body: withoutBom, hasFrontmatter: false, diagnostics };
   }
 
-  const endIndex = normalized.indexOf("\n---", 4);
-  if (endIndex === -1) {
-    diagnostics.push({
-      severity: options?.strict ? "error" : "warn",
-      code: "PARSE_FRONTMATTER",
-      message: "Frontmatter 缺少结束标记 (---)。",
-      file: options?.file,
-    });
-    return { data: {}, body: normalized, hasFrontmatter: false, diagnostics };
-  }
-
-  const fmRaw = normalized.slice(4, endIndex + 1);
-  const rest = normalized.slice(endIndex + "\n---".length);
+  const fmRaw = fmMatch[1];
+  const rest = withoutBom.slice(fmMatch[0].length);
   const body = rest.startsWith("\n") ? rest.slice(1) : rest;
 
   try {
