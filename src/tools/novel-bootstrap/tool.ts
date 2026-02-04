@@ -138,9 +138,9 @@ export function createNovelBootstrapTool(deps: { projectRoot: string; config: No
         .sort((a, b) => a.localeCompare(b));
 
       const nextSteps = [
-        "Run: novel_extract_entities (generate candidates.json)",
-        "Then: novel_apply_candidates (apply to frontmatter safely)",
-        "Then: novel_continuity_check (validate timeline/threads)",
+        "Run: /novel-extract-entities (generate candidates.json)",
+        "Then: /novel-apply-candidates (apply to frontmatter safely)",
+        "Then: /novel-continuity-check (validate timeline/threads)",
       ];
 
       const durationMs = Date.now() - startedAt;
@@ -175,4 +175,3 @@ export function createNovelBootstrapTool(deps: { projectRoot: string; config: No
     },
   });
 }
-
