@@ -130,12 +130,16 @@ function upsertOpencodePlugin(opencodeConfigPath: string, pluginSpecifier: strin
     );
   }
 
-  const currentPlugins = Array.isArray(parsed.data?.plugin)
-    ? (parsed.data?.plugin as unknown[]).filter((v) => typeof v === "string")
-    : [];
+  const current = parsed.data?.plugin;
+  const currentPlugins: string[] =
+    typeof current === "string"
+      ? [current]
+      : Array.isArray(current)
+        ? current.filter((v): v is string => typeof v === "string")
+        : [];
   const nextPlugins = currentPlugins.includes(pluginSpecifier)
-    ? (currentPlugins as string[])
-    : [...(currentPlugins as string[]), pluginSpecifier];
+    ? currentPlugins
+    : [...currentPlugins, pluginSpecifier];
 
   const edits = modify(raw, ["plugin"], nextPlugins, {
     formattingOptions: { insertSpaces: true, tabSize: 2, eol: "\n" },

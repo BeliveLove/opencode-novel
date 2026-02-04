@@ -255,13 +255,13 @@ function toXhtmlFragment(html: string): string {
   // Best-effort: make common void elements XHTML-friendly.
   // This does not guarantee full XHTML validity, but works well for typical Markdown output.
   let out = html;
-  out = out.replace(/<br\\s*>/gi, "<br />");
-  out = out.replace(/<hr\\s*>/gi, "<hr />");
+  out = out.replace(/<br\s*>/gi, "<br />");
+  out = out.replace(/<hr\s*>/gi, "<hr />");
 
-  out = out.replace(/<img\\b[^>]*?>/gi, (m) => (m.endsWith("/>") ? m : `${m.slice(0, -1)} />`));
-  out = out.replace(/<meta\\b[^>]*?>/gi, (m) => (m.endsWith("/>") ? m : `${m.slice(0, -1)} />`));
-  out = out.replace(/<link\\b[^>]*?>/gi, (m) => (m.endsWith("/>") ? m : `${m.slice(0, -1)} />`));
-  out = out.replace(/<input\\b[^>]*?>/gi, (m) => (m.endsWith("/>") ? m : `${m.slice(0, -1)} />`));
+  out = out.replace(/<img\b[^>]*?>/gi, (m) => (m.endsWith("/>") ? m : `${m.slice(0, -1)} />`));
+  out = out.replace(/<meta\b[^>]*?>/gi, (m) => (m.endsWith("/>") ? m : `${m.slice(0, -1)} />`));
+  out = out.replace(/<link\b[^>]*?>/gi, (m) => (m.endsWith("/>") ? m : `${m.slice(0, -1)} />`));
+  out = out.replace(/<input\b[^>]*?>/gi, (m) => (m.endsWith("/>") ? m : `${m.slice(0, -1)} />`));
 
   return out;
 }
