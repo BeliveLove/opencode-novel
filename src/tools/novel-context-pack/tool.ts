@@ -287,13 +287,19 @@ export function createNovelContextPackTool(deps: {
             }
           }
           if (include.openThreads) {
+            const closedInChapter = new Set(target.threads_closed ?? []);
             const threadIds = new Set([
               ...(target.threads_opened ?? []),
               ...(target.threads_advanced ?? []),
-              ...(target.threads_closed ?? []),
             ]);
             for (const threadId of threadIds) {
-              includeThread(threadId, "chapter.threads_*");
+              if (closedInChapter.has(threadId)) continue;
+
+              const thread = scan.entities.threads.find((t) => t.thread_id === threadId);
+              const status = (thread?.status ?? "").toLowerCase();
+              if (status === "closed") continue;
+
+              includeThread(threadId, "chapter.open_threads");
             }
           }
         }
