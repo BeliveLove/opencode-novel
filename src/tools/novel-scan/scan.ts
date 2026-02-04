@@ -22,14 +22,30 @@ import type {
 
 function listMarkdownFiles(dir: string): string[] {
   if (!existsSync(dir)) return [];
-  const entries = readdirSync(dir, { withFileTypes: true });
+  const stack: string[] = [dir];
   const files: string[] = [];
-  for (const entry of entries) {
-    if (!entry.isFile()) continue;
-    const ext = extname(entry.name).toLowerCase();
-    if (ext !== ".md") continue;
-    files.push(join(dir, entry.name));
+
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) continue;
+
+    const entries = readdirSync(current, { withFileTypes: true });
+    for (const entry of entries) {
+      const abs = join(current, entry.name);
+      if (entry.isDirectory()) {
+        // Common convention: treat dot-dirs as private/metadata and skip them.
+        if (entry.name.startsWith(".")) continue;
+        stack.push(abs);
+        continue;
+      }
+
+      if (!entry.isFile()) continue;
+      const ext = extname(entry.name).toLowerCase();
+      if (ext !== ".md") continue;
+      files.push(abs);
+    }
   }
+
   return files.sort((a, b) => a.localeCompare(b));
 }
 

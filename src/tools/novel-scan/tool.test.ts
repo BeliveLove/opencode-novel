@@ -36,6 +36,23 @@ tags: [intro]
 正文……
 `,
       );
+      writeFixtureFile(
+        rootDir,
+        "manuscript/chapters/act1/ch0002.md",
+        `---
+chapter_id: ch0002
+title: "第二章：继续"
+characters: [char-zhangsan]
+threads_opened: []
+threads_advanced: [th-001]
+threads_closed: []
+---
+
+# 第二章：继续
+
+正文……
+`,
+      );
 
       writeFixtureFile(
         rootDir,
@@ -102,7 +119,7 @@ name: "镇口"
       const json = extractResultJson(String(output)) as NovelScanResultJson;
 
       expect(json.version).toBe(1);
-      expect(json.entities.chapters.length).toBe(1);
+      expect(json.entities.chapters.length).toBe(2);
       expect(json.entities.characters.length).toBe(2);
       expect(json.entities.threads.length).toBe(1);
 
