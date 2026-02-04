@@ -36,4 +36,3 @@ export type NovelBootstrapResultJson = {
   diagnostics: Diagnostic[];
   stats: { durationMs: number };
 };
-

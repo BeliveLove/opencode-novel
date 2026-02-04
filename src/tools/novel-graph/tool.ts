@@ -15,7 +15,7 @@ import type { NovelGraphArgs, NovelGraphKind, NovelGraphResultJson } from "./typ
 type Relation = { source: string; target: string; type: string };
 
 function escapeMermaidLabel(text: string): string {
-  return text.replaceAll("\"", "'").replaceAll("\n", " ").trim();
+  return text.replaceAll('"', "'").replaceAll("\n", " ").trim();
 }
 
 function displayEntityLabel(id: string, name?: string): string {
@@ -123,7 +123,13 @@ export function createNovelGraphTool(deps: {
         const entityPaths = scan.entities.characters.map((c) => ({ id: c.id, path: c.path }));
 
         const explicit = preferExplicitRelations
-          ? parseExplicitRelations(rootDir, entityPaths, "relationships", diagnostics, deps.config.encoding)
+          ? parseExplicitRelations(
+              rootDir,
+              entityPaths,
+              "relationships",
+              diagnostics,
+              deps.config.encoding,
+            )
           : [];
 
         if (explicit.length > 0) {
@@ -158,9 +164,17 @@ export function createNovelGraphTool(deps: {
             });
         }
       } else {
-        const nameById = new Map<string, string | undefined>(scan.entities.factions.map((f) => [f.id, f.name]));
+        const nameById = new Map<string, string | undefined>(
+          scan.entities.factions.map((f) => [f.id, f.name]),
+        );
         const entityPaths = scan.entities.factions.map((f) => ({ id: f.id, path: f.path }));
-        const explicit = parseExplicitRelations(rootDir, entityPaths, "relationships", diagnostics, deps.config.encoding);
+        const explicit = parseExplicitRelations(
+          rootDir,
+          entityPaths,
+          "relationships",
+          diagnostics,
+          deps.config.encoding,
+        );
 
         const nodeIds = new Set<string>(scan.entities.factions.map((f) => f.id));
         nodes = Array.from(nodeIds)

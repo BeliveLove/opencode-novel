@@ -9,4 +9,3 @@ export const TEXT_ENCODINGS = [
 ] as const;
 
 export type TextEncoding = (typeof TEXT_ENCODINGS)[number];
-

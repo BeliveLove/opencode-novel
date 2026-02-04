@@ -50,4 +50,3 @@ threads_closed: []
     });
   });
 });
-

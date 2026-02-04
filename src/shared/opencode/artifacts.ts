@@ -33,4 +33,3 @@ export function buildSkillMarkdown(def: {
     "",
   ].join("\n");
 }
-

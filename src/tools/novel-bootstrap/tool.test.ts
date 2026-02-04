@@ -28,8 +28,9 @@ Some text
       expect(
         existsSync(path.join(rootDir, ".opencode", "novel", "GRAPH", "RELATIONSHIPS.mmd")),
       ).toBeTrue();
-      expect(existsSync(path.join(rootDir, ".opencode", "novel", "CHARACTER_REPORT.md"))).toBeTrue();
+      expect(
+        existsSync(path.join(rootDir, ".opencode", "novel", "CHARACTER_REPORT.md")),
+      ).toBeTrue();
     });
   });
 });
-

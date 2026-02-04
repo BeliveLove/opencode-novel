@@ -582,13 +582,20 @@ export function scanNovelProject(deps: {
       a.chapter_id.localeCompare(b.chapter_id, sortLocale) ||
       a.path.localeCompare(b.path, sortLocale),
   );
-  characters.sort((a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale));
+  characters.sort(
+    (a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale),
+  );
   threads.sort(
     (a, b) =>
-      a.thread_id.localeCompare(b.thread_id, sortLocale) || a.path.localeCompare(b.path, sortLocale),
+      a.thread_id.localeCompare(b.thread_id, sortLocale) ||
+      a.path.localeCompare(b.path, sortLocale),
   );
-  factions.sort((a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale));
-  locations.sort((a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale));
+  factions.sort(
+    (a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale),
+  );
+  locations.sort(
+    (a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale),
+  );
 
   validateUniqueness(
     diagnostics,

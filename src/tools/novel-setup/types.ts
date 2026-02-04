@@ -35,4 +35,3 @@ export type NovelSetupResultJson = {
   };
   diagnostics: Diagnostic[];
 };
-

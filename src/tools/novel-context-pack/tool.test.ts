@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { extractResultJson, executeTool, withTempDir, writeFixtureFile } from "../../../test/utils";
+import { executeTool, extractResultJson, withTempDir, writeFixtureFile } from "../../../test/utils";
 import { NovelConfigSchema } from "../../config/schema";
 import { createNovelContextPackTool } from "./tool";
 import type { NovelContextPackResultJson } from "./types";

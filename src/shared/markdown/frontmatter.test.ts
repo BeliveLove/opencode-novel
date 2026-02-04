@@ -42,4 +42,3 @@ Body
     expect(parsed.diagnostics[0]?.code).toBe("PARSE_FRONTMATTER");
   });
 });
-

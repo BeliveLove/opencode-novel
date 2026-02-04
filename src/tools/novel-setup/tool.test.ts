@@ -30,4 +30,3 @@ describe("novel_setup", () => {
     });
   });
 });
-

@@ -86,9 +86,7 @@ export function createNovelContextPackTool(deps: {
       task: tool.schema.enum(["draft", "review", "rewrite", "continuity", "foreshadowing"]),
       chapter_id: tool.schema.string().optional(),
       thread_id: tool.schema.string().optional(),
-      budget: tool.schema
-        .object({ maxChars: tool.schema.number().int().positive() })
-        .optional(),
+      budget: tool.schema.object({ maxChars: tool.schema.number().int().positive() }).optional(),
       include: tool.schema
         .object({
           bible: tool.schema.boolean().optional(),

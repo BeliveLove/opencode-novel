@@ -33,7 +33,10 @@ function toUtcIsoNow(): string {
   return new Date().toISOString();
 }
 
-function walkFiles(root: string, options: { excludeMatchers: Array<(p: string) => boolean> }): string[] {
+function walkFiles(
+  root: string,
+  options: { excludeMatchers: Array<(p: string) => boolean> },
+): string[] {
   const result: string[] = [];
   const stack: string[] = [root];
 

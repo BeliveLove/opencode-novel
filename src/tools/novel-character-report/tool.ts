@@ -113,7 +113,9 @@ export function createNovelCharacterReportTool(deps: {
       const items: CharacterReportItem[] = [];
       for (const character of scan.entities.characters) {
         const abs = fromRelativePosixPath(rootDir, character.path);
-        const content = existsSync(abs) ? readTextFileSync(abs, { encoding: deps.config.encoding }) : "";
+        const content = existsSync(abs)
+          ? readTextFileSync(abs, { encoding: deps.config.encoding })
+          : "";
         const parsed = parseFrontmatter<Record<string, unknown>>(content, {
           file: character.path,
           strict: false,

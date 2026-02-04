@@ -20,4 +20,3 @@ describe("novel_bible", () => {
     });
   });
 });
-

@@ -24,8 +24,7 @@ export function parseFrontmatter<T extends Record<string, unknown>>(
 
   // Allow UTF-8 BOM + leading blank lines before the frontmatter marker.
   // This avoids surprising "missing id" diagnostics when users copy/paste markdown from editors.
-  const fmMatch =
-    /^(?:[ \t]*\n)*---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/.exec(withoutBom);
+  const fmMatch = /^(?:[ \t]*\n)*---[ \t]*\n([\s\S]*?)\n---[ \t]*(?:\n|$)/.exec(withoutBom);
 
   if (!fmMatch) {
     // If it looks like frontmatter started but never ended, emit a helpful diagnostic.

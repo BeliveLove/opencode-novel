@@ -59,15 +59,25 @@ describe("novel_import", () => {
 
       const utf16Abs = path.join(rootDir, "drafts", "utf16le.txt");
       const utf16Content = "# Chapter 3: UTF16\n\n中文\n";
-      const utf16Buf = Buffer.concat([Buffer.from([0xff, 0xfe]), Buffer.from(utf16Content, "utf16le")]);
+      const utf16Buf = Buffer.concat([
+        Buffer.from([0xff, 0xfe]),
+        Buffer.from(utf16Content, "utf16le"),
+      ]);
       writeFileSync(utf16Abs, utf16Buf);
 
       const tool = createNovelImportTool({ projectRoot: rootDir, config });
-      await executeTool(tool, { rootDir, fromDir: rootDir, mode: "copy" } satisfies NovelImportArgs);
+      await executeTool(tool, {
+        rootDir,
+        fromDir: rootDir,
+        mode: "copy",
+      } satisfies NovelImportArgs);
 
       const out1 = readFileSync(path.join(rootDir, "manuscript", "chapters", "ch0001.md"), "utf8");
       expect(out1).toContain("中文");
-      const outUtf16 = readFileSync(path.join(rootDir, "manuscript", "chapters", "ch0003.md"), "utf8");
+      const outUtf16 = readFileSync(
+        path.join(rootDir, "manuscript", "chapters", "ch0003.md"),
+        "utf8",
+      );
       expect(outUtf16).toContain("中文");
     });
   });

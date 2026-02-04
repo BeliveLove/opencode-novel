@@ -25,7 +25,10 @@ function extractResultJson(markdownOutput: string): unknown {
   return JSON.parse(match[1]);
 }
 
-async function executeToolDef(toolDef: ToolDefinition, args: Record<string, unknown>): Promise<string> {
+async function executeToolDef(
+  toolDef: ToolDefinition,
+  args: Record<string, unknown>,
+): Promise<string> {
   const executable = toolDef as unknown as {
     execute: (toolArgs: Record<string, unknown>) => unknown | Promise<unknown>;
   };
@@ -39,11 +42,17 @@ function pushStepDiagnostics(diagnostics: Diagnostic[], stepName: string, output
   if (!Array.isArray(maybe.diagnostics)) return;
   for (const d of maybe.diagnostics) {
     if (!d || typeof d !== "object") continue;
-    diagnostics.push({ ...(d as Diagnostic), code: `BOOTSTRAP_${stepName}_${(d as Diagnostic).code}` });
+    diagnostics.push({
+      ...(d as Diagnostic),
+      code: `BOOTSTRAP_${stepName}_${(d as Diagnostic).code}`,
+    });
   }
 }
 
-export function createNovelBootstrapTool(deps: { projectRoot: string; config: NovelConfig }): ToolDefinition {
+export function createNovelBootstrapTool(deps: {
+  projectRoot: string;
+  config: NovelConfig;
+}): ToolDefinition {
   const scaffoldTool = createNovelScaffoldTool(deps);
   const importTool = createNovelImportTool(deps);
   const indexTool = createNovelIndexTool(deps);
@@ -80,7 +89,9 @@ export function createNovelBootstrapTool(deps: { projectRoot: string; config: No
         writeTemplates: true,
         forceOverwriteTemplates: false,
       });
-      const scaffoldJson = extractResultJson(scaffoldOut) as NovelBootstrapResultJson["results"]["scaffold"];
+      const scaffoldJson = extractResultJson(
+        scaffoldOut,
+      ) as NovelBootstrapResultJson["results"]["scaffold"];
       pushStepDiagnostics(diagnostics, "SCAFFOLD", scaffoldJson);
 
       const importOut = await executeToolDef(importTool, {
@@ -91,7 +102,9 @@ export function createNovelBootstrapTool(deps: { projectRoot: string; config: No
         writeConfigJsonc: false,
         writeReport: true,
       });
-      const importJson = extractResultJson(importOut) as NovelBootstrapResultJson["results"]["import"];
+      const importJson = extractResultJson(
+        importOut,
+      ) as NovelBootstrapResultJson["results"]["import"];
       pushStepDiagnostics(diagnostics, "IMPORT", importJson);
 
       const indexOut = await executeToolDef(indexTool, {
@@ -109,19 +122,39 @@ export function createNovelBootstrapTool(deps: { projectRoot: string; config: No
         createStubs,
         stubPolicy: "write",
       });
-      const gapsJson = extractResultJson(gapsOut) as NovelBootstrapResultJson["results"]["entityGaps"];
+      const gapsJson = extractResultJson(
+        gapsOut,
+      ) as NovelBootstrapResultJson["results"]["entityGaps"];
       pushStepDiagnostics(diagnostics, "ENTITY_GAPS", gapsJson);
 
-      const relGraphOut = await executeToolDef(graphTool, { rootDir, manuscriptDir, kind: "relationships" });
-      const relGraphJson = extractResultJson(relGraphOut) as NovelBootstrapResultJson["results"]["graphs"]["relationships"];
+      const relGraphOut = await executeToolDef(graphTool, {
+        rootDir,
+        manuscriptDir,
+        kind: "relationships",
+      });
+      const relGraphJson = extractResultJson(
+        relGraphOut,
+      ) as NovelBootstrapResultJson["results"]["graphs"]["relationships"];
       pushStepDiagnostics(diagnostics, "GRAPH_RELATIONSHIPS", relGraphJson);
 
-      const facGraphOut = await executeToolDef(graphTool, { rootDir, manuscriptDir, kind: "factions" });
-      const facGraphJson = extractResultJson(facGraphOut) as NovelBootstrapResultJson["results"]["graphs"]["factions"];
+      const facGraphOut = await executeToolDef(graphTool, {
+        rootDir,
+        manuscriptDir,
+        kind: "factions",
+      });
+      const facGraphJson = extractResultJson(
+        facGraphOut,
+      ) as NovelBootstrapResultJson["results"]["graphs"]["factions"];
       pushStepDiagnostics(diagnostics, "GRAPH_FACTIONS", facGraphJson);
 
-      const charOut = await executeToolDef(characterReportTool, { rootDir, manuscriptDir, writeReport: true });
-      const charJson = extractResultJson(charOut) as NovelBootstrapResultJson["results"]["characterReport"];
+      const charOut = await executeToolDef(characterReportTool, {
+        rootDir,
+        manuscriptDir,
+        writeReport: true,
+      });
+      const charJson = extractResultJson(
+        charOut,
+      ) as NovelBootstrapResultJson["results"]["characterReport"];
       pushStepDiagnostics(diagnostics, "CHARACTER_REPORT", charJson);
 
       const writtenFiles = [
