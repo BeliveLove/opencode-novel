@@ -36,6 +36,7 @@
 - `agents_enabled`：是否注入 agents（默认 `true`）
 - `agent_name_prefix`：注入到 OpenCode 的 agent 名称前缀（默认 `novel-`）
 - `agents_preset`：`core|full`（默认 `core`）
+- `agents_primary`：哪些 agent 作为“可选主 Agent”显示在 UI（默认仅 `["sentinel"]`；其他会以 `subagent` 注入，供主编排调用）
 - `agents_force_override`：是否强制覆盖 OpenCode 现有同名 agent（默认 `false`）
 - `agents`：对特定 agent 做 override（model/temperature/top_p/maxTokens/prompt_append/tools/permission 等）
 

@@ -9,7 +9,7 @@ const SYSTEM_PROMPT = `你是“小说缪斯（novel-muse）”。你的任务�
 
 export function createNovelMuseAgent(model: string): AgentConfig {
   return {
-    mode: "primary",
+    mode: "subagent",
     model: model || undefined,
     temperature: 0.7,
     description: "发散创意（桥段/冲突升级/场景库），默认不直接改正文。",

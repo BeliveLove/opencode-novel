@@ -88,6 +88,11 @@ export function createConfigHandler(deps: { pluginConfig: NovelConfig }) {
     const prefix = pluginConfig.agent_name_prefix ?? "novel-";
     const preset = pluginConfig.agents_preset ?? "core";
     const disabled = new Set((pluginConfig.disabled_agents ?? []).map((s) => s.toLowerCase()));
+    const primaryAgents = pluginConfig.agents_primary ?? [];
+    const primary =
+      primaryAgents.length > 0
+        ? new Set(primaryAgents.map((s) => s.toLowerCase()))
+        : new Set(["sentinel"]);
     const forceOverride = pluginConfig.agents_force_override ?? false;
 
     const modelFromUi = typeof config.model === "string" ? (config.model as string) : "";
@@ -98,10 +103,15 @@ export function createConfigHandler(deps: { pluginConfig: NovelConfig }) {
     const merged: Record<string, unknown> = { ...existing };
 
     for (const [baseName, agentConfig] of Object.entries(agents)) {
-      if (disabled.has(baseName.toLowerCase())) continue;
       const name = `${prefix}${baseName}`;
+      const baseNameLower = baseName.toLowerCase();
+      const nameLower = name.toLowerCase();
+      if (disabled.has(baseNameLower) || disabled.has(nameLower)) continue;
+
       const override = pluginConfig.agents?.[name];
       const finalAgent = applyAgentOverride(agentConfig, isRecord(override) ? override : undefined);
+      finalAgent.mode =
+        primary.has(baseNameLower) || primary.has(nameLower) ? "primary" : "subagent";
 
       if (!forceOverride && Object.hasOwn(existing, name)) {
         continue;
