@@ -203,22 +203,58 @@ export function scanNovelProject(deps: {
 
   for (const file of allFiles) {
     const stats = statSync(file.path);
-    const content = readTextFileSync(file.path, { encoding: deps.config.encoding });
     const relPath = toRelativePosixPath(rootDir, file.path);
+
+    const cachedHash = cachedMaps.fileByPath.get(relPath);
+    const fastUnchanged =
+      mode === "incremental" &&
+      cachedHash &&
+      cachedHash.size === stats.size &&
+      cachedHash.mtimeMs === stats.mtimeMs;
+
+    if (fastUnchanged) {
+      files.push({
+        path: relPath,
+        mtimeMs: stats.mtimeMs,
+        size: stats.size,
+        sha256: cachedHash.sha256,
+      });
+
+      const cachedDiags = cachedMaps.perFileDiagnostics.get(relPath) ?? [];
+      perFileDiagnostics.set(relPath, cachedDiags);
+      diagnostics.push(...cachedDiags);
+
+      if (file.kind === "chapter") {
+        const entity = cachedMaps.chapterByPath.get(relPath);
+        if (entity) chapters.push(entity);
+      } else if (file.kind === "character") {
+        const entity = cachedMaps.characterByPath.get(relPath);
+        if (entity) characters.push(entity);
+      } else if (file.kind === "thread") {
+        const entity = cachedMaps.threadByPath.get(relPath);
+        if (entity) threads.push(entity);
+      } else if (file.kind === "faction") {
+        const entity = cachedMaps.factionByPath.get(relPath);
+        if (entity) factions.push(entity);
+      } else if (file.kind === "location") {
+        const entity = cachedMaps.locationByPath.get(relPath);
+        if (entity) locations.push(entity);
+      }
+      continue;
+    }
+
+    const content = readTextFileSync(file.path, { encoding: deps.config.encoding });
     const sha256 = createSha256Hex(content);
 
-    const fileHash: NovelFileHash = {
+    files.push({
       path: relPath,
       mtimeMs: stats.mtimeMs,
       size: stats.size,
       sha256,
-    };
-    files.push(fileHash);
+    });
 
-    const cachedHash = cachedMaps.fileByPath.get(relPath);
-    const isUnchanged = mode === "incremental" && cachedHash?.sha256 === sha256;
-
-    if (isUnchanged) {
+    const hashUnchanged = mode === "incremental" && cachedHash?.sha256 === sha256;
+    if (hashUnchanged) {
       const cachedDiags = cachedMaps.perFileDiagnostics.get(relPath) ?? [];
       perFileDiagnostics.set(relPath, cachedDiags);
       diagnostics.push(...cachedDiags);
