@@ -20,7 +20,7 @@ import type {
   ThreadEntity,
 } from "./types";
 
-function listMarkdownFiles(dir: string): string[] {
+function listMarkdownFiles(dir: string, options?: { sortLocale?: string }): string[] {
   if (!existsSync(dir)) return [];
   const stack: string[] = [dir];
   const files: string[] = [];
@@ -46,7 +46,7 @@ function listMarkdownFiles(dir: string): string[] {
     }
   }
 
-  return files.sort((a, b) => a.localeCompare(b));
+  return files.sort((a, b) => a.localeCompare(b, options?.sortLocale));
 }
 
 function loadScanCache(cachePath: string): ScanCacheV1 | null {
@@ -151,6 +151,45 @@ function validateUniqueness(
   }
 }
 
+function compileNamingPattern(options: {
+  diagnostics: Diagnostic[];
+  kind: string;
+  pattern: string;
+  strictMode: boolean;
+}): RegExp | null {
+  try {
+    return new RegExp(options.pattern);
+  } catch {
+    options.diagnostics.push({
+      severity: options.strictMode ? "error" : "warn",
+      code: "SCAN_NAMING_PATTERN_INVALID",
+      message: `命名规则正则无效 (${options.kind}): ${options.pattern}`,
+      suggestedFix: "请修复 .opencode/novel.jsonc 中 naming.*Pattern 的正则表达式。",
+    });
+    return null;
+  }
+}
+
+function validateIdAgainstPattern(options: {
+  diagnostics: Diagnostic[];
+  kind: string;
+  id: string;
+  file: string;
+  pattern: RegExp | null;
+  patternSource: string;
+  strictMode: boolean;
+}) {
+  if (!options.pattern) return;
+  if (options.pattern.test(options.id)) return;
+  options.diagnostics.push({
+    severity: options.strictMode ? "error" : "warn",
+    code: "SCAN_ID_PATTERN_MISMATCH",
+    message: `${options.kind} id 不符合命名规则: ${options.id}`,
+    file: options.file,
+    suggestedFix: `请将 id 调整为匹配 ${options.patternSource}，或在 .opencode/novel.jsonc 中更新 naming.*Pattern。`,
+  });
+}
+
 export function scanNovelProject(deps: {
   projectRoot: string;
   config: NovelConfig;
@@ -170,6 +209,45 @@ export function scanNovelProject(deps: {
   const cachePath = join(rootDir, deps.config.index.cacheDir, "scan.json");
   const previousCache = mode === "incremental" ? loadScanCache(cachePath) : null;
   const cachedMaps = buildCachedMaps(previousCache);
+
+  const sortLocale = deps.config.index.stableSortLocale;
+
+  const chapterIdPatternSource = deps.config.naming.chapterIdPattern;
+  const characterIdPatternSource = deps.config.naming.characterIdPattern;
+  const threadIdPatternSource = deps.config.naming.threadIdPattern;
+  const factionIdPatternSource = deps.config.naming.factionIdPattern;
+  const locationIdPatternSource = deps.config.naming.locationIdPattern;
+
+  const chapterIdPattern = compileNamingPattern({
+    diagnostics,
+    kind: "chapter",
+    pattern: chapterIdPatternSource,
+    strictMode,
+  });
+  const characterIdPattern = compileNamingPattern({
+    diagnostics,
+    kind: "character",
+    pattern: characterIdPatternSource,
+    strictMode,
+  });
+  const threadIdPattern = compileNamingPattern({
+    diagnostics,
+    kind: "thread",
+    pattern: threadIdPatternSource,
+    strictMode,
+  });
+  const factionIdPattern = compileNamingPattern({
+    diagnostics,
+    kind: "faction",
+    pattern: factionIdPatternSource,
+    strictMode,
+  });
+  const locationIdPattern = compileNamingPattern({
+    diagnostics,
+    kind: "location",
+    pattern: locationIdPatternSource,
+    strictMode,
+  });
 
   const expectedSubdirs = new Set([
     "chapters",
@@ -194,11 +272,11 @@ export function scanNovelProject(deps: {
     }
   }
 
-  const chapterFiles = listMarkdownFiles(join(manuscriptDir, "chapters"));
-  const characterFiles = listMarkdownFiles(join(manuscriptDir, "characters"));
-  const threadFiles = listMarkdownFiles(join(manuscriptDir, "threads"));
-  const factionFiles = listMarkdownFiles(join(manuscriptDir, "factions"));
-  const locationFiles = listMarkdownFiles(join(manuscriptDir, "locations"));
+  const chapterFiles = listMarkdownFiles(join(manuscriptDir, "chapters"), { sortLocale });
+  const characterFiles = listMarkdownFiles(join(manuscriptDir, "characters"), { sortLocale });
+  const threadFiles = listMarkdownFiles(join(manuscriptDir, "threads"), { sortLocale });
+  const factionFiles = listMarkdownFiles(join(manuscriptDir, "factions"), { sortLocale });
+  const locationFiles = listMarkdownFiles(join(manuscriptDir, "locations"), { sortLocale });
 
   const perFileDiagnostics = new Map<string, Diagnostic[]>();
 
@@ -215,7 +293,7 @@ export function scanNovelProject(deps: {
     ...threadFiles.map((p) => ({ kind: "thread" as const, path: p })),
     ...factionFiles.map((p) => ({ kind: "faction" as const, path: p })),
     ...locationFiles.map((p) => ({ kind: "location" as const, path: p })),
-  ].sort((a, b) => a.path.localeCompare(b.path));
+  ].sort((a, b) => a.path.localeCompare(b.path, sortLocale));
 
   for (const file of allFiles) {
     const stats = statSync(file.path);
@@ -316,6 +394,16 @@ export function scanNovelProject(deps: {
         continue;
       }
 
+      validateIdAgainstPattern({
+        diagnostics,
+        kind: "chapter",
+        id: chapterId,
+        file: relPath,
+        pattern: chapterIdPattern,
+        patternSource: chapterIdPatternSource,
+        strictMode,
+      });
+
       const entity: ChapterEntity = {
         chapter_id: chapterId,
         title: typeof data.title === "string" ? data.title : undefined,
@@ -369,6 +457,17 @@ export function scanNovelProject(deps: {
         });
         continue;
       }
+
+      validateIdAgainstPattern({
+        diagnostics,
+        kind: "character",
+        id,
+        file: relPath,
+        pattern: characterIdPattern,
+        patternSource: characterIdPatternSource,
+        strictMode,
+      });
+
       const entity: CharacterEntity = {
         id,
         name: typeof data.name === "string" ? data.name : undefined,
@@ -393,6 +492,17 @@ export function scanNovelProject(deps: {
         });
         continue;
       }
+
+      validateIdAgainstPattern({
+        diagnostics,
+        kind: "thread",
+        id: threadId,
+        file: relPath,
+        pattern: threadIdPattern,
+        patternSource: threadIdPatternSource,
+        strictMode,
+      });
+
       const entity: ThreadEntity = {
         thread_id: threadId,
         type: typeof data.type === "string" ? data.type : undefined,
@@ -415,6 +525,17 @@ export function scanNovelProject(deps: {
         });
         continue;
       }
+
+      validateIdAgainstPattern({
+        diagnostics,
+        kind: "faction",
+        id,
+        file: relPath,
+        pattern: factionIdPattern,
+        patternSource: factionIdPatternSource,
+        strictMode,
+      });
+
       const entity: FactionEntity = {
         id,
         name: typeof data.name === "string" ? data.name : undefined,
@@ -436,6 +557,17 @@ export function scanNovelProject(deps: {
         });
         continue;
       }
+
+      validateIdAgainstPattern({
+        diagnostics,
+        kind: "location",
+        id,
+        file: relPath,
+        pattern: locationIdPattern,
+        patternSource: locationIdPatternSource,
+        strictMode,
+      });
+
       const entity: LocationEntity = {
         id,
         name: typeof data.name === "string" ? data.name : undefined,
@@ -445,11 +577,18 @@ export function scanNovelProject(deps: {
     }
   }
 
-  chapters.sort((a, b) => a.chapter_id.localeCompare(b.chapter_id) || a.path.localeCompare(b.path));
-  characters.sort((a, b) => a.id.localeCompare(b.id) || a.path.localeCompare(b.path));
-  threads.sort((a, b) => a.thread_id.localeCompare(b.thread_id) || a.path.localeCompare(b.path));
-  factions.sort((a, b) => a.id.localeCompare(b.id) || a.path.localeCompare(b.path));
-  locations.sort((a, b) => a.id.localeCompare(b.id) || a.path.localeCompare(b.path));
+  chapters.sort(
+    (a, b) =>
+      a.chapter_id.localeCompare(b.chapter_id, sortLocale) ||
+      a.path.localeCompare(b.path, sortLocale),
+  );
+  characters.sort((a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale));
+  threads.sort(
+    (a, b) =>
+      a.thread_id.localeCompare(b.thread_id, sortLocale) || a.path.localeCompare(b.path, sortLocale),
+  );
+  factions.sort((a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale));
+  locations.sort((a, b) => a.id.localeCompare(b.id, sortLocale) || a.path.localeCompare(b.path, sortLocale));
 
   validateUniqueness(
     diagnostics,
@@ -564,7 +703,7 @@ export function scanNovelProject(deps: {
     rootDir,
     manuscriptDir: manuscriptDirName,
     stats,
-    files: files.sort((a, b) => a.path.localeCompare(b.path)),
+    files: files.sort((a, b) => a.path.localeCompare(b.path, sortLocale)),
     entities: { chapters, characters, threads, factions, locations },
     diagnostics,
     cache: { scanCachePath: writeCache ? toRelativePosixPath(rootDir, cachePath) : undefined },
