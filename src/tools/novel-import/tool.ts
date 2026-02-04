@@ -33,7 +33,7 @@ function toUtcIsoNow(): string {
   return new Date().toISOString();
 }
 
-function walkFiles(root: string): string[] {
+function walkFiles(root: string, options: { excludeMatchers: Array<(p: string) => boolean> }): string[] {
   const result: string[] = [];
   const stack: string[] = [root];
 
@@ -43,8 +43,10 @@ function walkFiles(root: string): string[] {
     const entries = readdirSync(current, { withFileTypes: true });
     for (const entry of entries) {
       const abs = path.join(current, entry.name);
+      const rel = toRelativePosixPath(root, abs);
       if (entry.isDirectory()) {
-        result.push(abs + path.sep); // mark directory as well for glob match consistency
+        // Performance: prune excluded directories before descending.
+        if (isMatchedAny(options.excludeMatchers, rel)) continue;
         stack.push(abs);
       } else if (entry.isFile()) {
         result.push(abs);
@@ -263,7 +265,7 @@ export function createNovelImportTool(deps: {
       const enableLooseAfterStrong =
         deps.config.import.chapterDetection.enableLooseH1AfterFirstMatch;
 
-      const sourceFiles = walkFiles(fromDir)
+      const sourceFiles = walkFiles(fromDir, { excludeMatchers })
         .filter((abs) => abs.endsWith(".md") || abs.endsWith(".txt"))
         .filter((abs) => {
           const relFromFrom = toRelativePosixPath(fromDir, abs);
