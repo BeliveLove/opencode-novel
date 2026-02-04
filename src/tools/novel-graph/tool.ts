@@ -14,6 +14,19 @@ import type { NovelGraphArgs, NovelGraphKind, NovelGraphResultJson } from "./typ
 
 type Relation = { source: string; target: string; type: string };
 
+function escapeMermaidLabel(text: string): string {
+  return text.replaceAll("\"", "'").replaceAll("\n", " ").trim();
+}
+
+function displayEntityLabel(id: string, name?: string): string {
+  const cleanName = name?.trim();
+  return cleanName ? `${cleanName} (${id})` : id;
+}
+
+function buildNodeDef(id: string, label: string): string {
+  return `${id}["${escapeMermaidLabel(label)}"]`;
+}
+
 function parseExplicitRelations(
   rootDir: string,
   entityPaths: Array<{ id: string; path: string }>,
@@ -104,6 +117,9 @@ export function createNovelGraphTool(deps: {
       let edges: string[] = [];
 
       if (kind === "relationships") {
+        const nameById = new Map<string, string | undefined>(
+          scan.entities.characters.map((c) => [c.id, c.name]),
+        );
         const entityPaths = scan.entities.characters.map((c) => ({ id: c.id, path: c.path }));
 
         const explicit = preferExplicitRelations
@@ -118,7 +134,7 @@ export function createNovelGraphTool(deps: {
           }
           nodes = Array.from(nodeIds)
             .sort((a, b) => a.localeCompare(b))
-            .map((id) => `${id}["${id}"]`);
+            .map((id) => buildNodeDef(id, displayEntityLabel(id, nameById.get(id))));
           edges = explicit
             .sort(
               (a, b) =>
@@ -132,7 +148,7 @@ export function createNovelGraphTool(deps: {
           const nodeIds = new Set<string>(scan.entities.characters.map((c) => c.id));
           nodes = Array.from(nodeIds)
             .sort((a, b) => a.localeCompare(b))
-            .map((id) => `${id}["${id}"]`);
+            .map((id) => buildNodeDef(id, displayEntityLabel(id, nameById.get(id))));
           edges = Array.from(counts.entries())
             .filter(([, count]) => count >= cooccurrenceMinWeight)
             .sort((a, b) => a[0].localeCompare(b[0]))
@@ -142,13 +158,14 @@ export function createNovelGraphTool(deps: {
             });
         }
       } else {
+        const nameById = new Map<string, string | undefined>(scan.entities.factions.map((f) => [f.id, f.name]));
         const entityPaths = scan.entities.factions.map((f) => ({ id: f.id, path: f.path }));
         const explicit = parseExplicitRelations(rootDir, entityPaths, "relationships", diagnostics, deps.config.encoding);
 
         const nodeIds = new Set<string>(scan.entities.factions.map((f) => f.id));
         nodes = Array.from(nodeIds)
           .sort((a, b) => a.localeCompare(b))
-          .map((id) => `${id}["${id}"]`);
+          .map((id) => buildNodeDef(id, displayEntityLabel(id, nameById.get(id))));
 
         if (explicit.length === 0) {
           diagnostics.push({
