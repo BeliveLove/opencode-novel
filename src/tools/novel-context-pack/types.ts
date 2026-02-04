@@ -8,7 +8,7 @@ export type NovelContextPackArgs = {
   task: NovelContextPackTask;
   chapter_id?: string;
   thread_id?: string;
-  budget: { maxChars: number };
+  budget?: { maxChars: number };
   include?: { bible?: boolean; characters?: boolean; openThreads?: boolean; lastChapters?: number };
   redaction?: { enabled: boolean; patterns: string[] };
   writeFile?: boolean;

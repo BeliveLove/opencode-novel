@@ -85,7 +85,9 @@ export function createNovelContextPackTool(deps: {
       task: tool.schema.enum(["draft", "review", "rewrite", "continuity", "foreshadowing"]),
       chapter_id: tool.schema.string().optional(),
       thread_id: tool.schema.string().optional(),
-      budget: tool.schema.object({ maxChars: tool.schema.number().int().positive() }),
+      budget: tool.schema
+        .object({ maxChars: tool.schema.number().int().positive() })
+        .optional(),
       include: tool.schema
         .object({
           bible: tool.schema.boolean().optional(),
@@ -108,7 +110,7 @@ export function createNovelContextPackTool(deps: {
 
       const rootDir = path.resolve(args.rootDir ?? deps.projectRoot);
       const manuscriptDirName = args.manuscriptDir ?? deps.config.manuscriptDir;
-      const budgetChars = args.budget.maxChars;
+      const budgetChars = args.budget?.maxChars ?? deps.config.contextPack.maxChars;
       const include = {
         bible: args.include?.bible ?? deps.config.contextPack.include.bible,
         characters: args.include?.characters ?? deps.config.contextPack.include.characters,
