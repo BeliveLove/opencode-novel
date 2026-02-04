@@ -17,6 +17,8 @@
 2. 安装到 OpenCode（推荐）：
    - `bun run script/install-opencode.ts -- --target=global`
    - 重启 OpenCode（插件与自定义命令/技能会自动生效）
+3. 卸载（可选）：
+   - `bun run uninstall:opencode`
 
 ## 配置
 

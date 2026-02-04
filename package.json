@@ -21,6 +21,7 @@
     "build:schema": "bun run script/build-schema.ts",
     "clean": "rm -rf dist",
     "install:opencode": "bun run script/install-opencode.ts -- --target=global",
+    "uninstall:opencode": "bun run script/uninstall-opencode.ts -- --target=global",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write .",
     "postinstall": "lefthook install",
