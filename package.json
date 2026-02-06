@@ -27,7 +27,6 @@
     "uninstall:opencode": "bun run script/uninstall-opencode.ts -- --target=global",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write .",
-    "postinstall": "lefthook install",
     "typecheck": "tsc --noEmit",
     "check": "bun run lint && bun run typecheck && bun test && bun run build",
     "test": "bun test"
