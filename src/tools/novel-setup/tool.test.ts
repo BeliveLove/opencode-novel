@@ -27,6 +27,18 @@ describe("novel_setup", () => {
       expect(
         existsSync(path.join(rootDir, ".opencode", "skill", "novel-oracle", "SKILL.md")),
       ).toBeTrue();
+      expect(
+        existsSync(
+          path.join(
+            rootDir,
+            ".opencode",
+            "skill",
+            "taxonomy-registry",
+            "references",
+            "taxonomy-v1.md",
+          ),
+        ),
+      ).toBeTrue();
     });
   });
 });

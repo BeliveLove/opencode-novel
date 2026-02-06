@@ -13,6 +13,7 @@ describe("builtin commands", () => {
     const review = commands["novel-chapter-review"];
 
     expect(plan.argumentHint).toContain("--apply");
+    expect(plan.argumentHint).toContain("--skip-profile");
     expect(draft.argumentHint).toContain("--apply");
     expect(continuation.argumentHint).toContain("--apply");
     expect(rewrite.argumentHint).toContain("--apply");
@@ -30,5 +31,8 @@ describe("builtin commands", () => {
     expect(rewrite.template).toContain("覆盖");
     expect(polish.template).toContain("不覆盖原章");
     expect(review.template).toContain("不直接改写正文");
+    expect(commands["novel-init"].template).toContain("profile");
+    expect(commands["novel-outline"].template).toContain("profile");
+    expect(review.template).toContain("profile");
   });
 });
