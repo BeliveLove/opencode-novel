@@ -17,11 +17,26 @@ const StyleGuideSchema = z
         avoid: z.array(z.string()).default([]),
       })
       .default({ preferred: [], avoid: [] }),
+    checks: z
+      .object({
+        catchphrase: z
+          .object({
+            maxCount: z.number().int().nonnegative().default(10),
+            reportMissing: z.boolean().default(true),
+          })
+          .default({ maxCount: 10, reportMissing: true }),
+      })
+      .default({
+        catchphrase: { maxCount: 10, reportMissing: true },
+      }),
   })
   .default({
     taboos: [],
     rating: "G",
     lexicon: { preferred: [], avoid: [] },
+    checks: {
+      catchphrase: { maxCount: 10, reportMissing: true },
+    },
   });
 
 const NamingSchema = z
@@ -81,6 +96,25 @@ const ThreadsSchema = z
 
 const NovelExportFormatSchema = z.enum(["md", "html", "epub", "docx"]);
 const NovelChapterOrderSchema = z.enum(["by_id", "by_timeline", "custom"]);
+const ExportDocxTemplateSchema = z.enum(["default", "manuscript"]);
+const ExportDocxSchema = z
+  .object({
+    template: ExportDocxTemplateSchema.default("default"),
+  })
+  .default({ template: "default" });
+
+const ExportPreflightCheckSchema = z.enum(["index", "continuity", "foreshadowing", "style"]);
+const ExportPreflightSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    checks: z.array(ExportPreflightCheckSchema).default(["index", "continuity", "foreshadowing"]),
+    failOn: z.enum(["error", "warn"]).default("error"),
+  })
+  .default({
+    enabled: false,
+    checks: ["index", "continuity", "foreshadowing"],
+    failOn: "error",
+  });
 
 const ExportSchema = z
   .object({
@@ -88,12 +122,20 @@ const ExportSchema = z
     chapterOrder: NovelChapterOrderSchema.default("by_id"),
     includeFrontmatter: z.boolean().default(false),
     outputDir: z.string().default("export"),
+    docx: ExportDocxSchema,
+    preflight: ExportPreflightSchema,
   })
   .default({
     formats: ["md"],
     chapterOrder: "by_id",
     includeFrontmatter: false,
     outputDir: "export",
+    docx: { template: "default" },
+    preflight: {
+      enabled: false,
+      checks: ["index", "continuity", "foreshadowing"],
+      failOn: "error",
+    },
   });
 
 const ContextPackSchema = z
