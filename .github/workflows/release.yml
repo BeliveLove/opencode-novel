@@ -23,7 +23,19 @@ jobs:
       - name: Install
         run: bun install --frozen-lockfile
 
+      - name: Detect release mode
+        id: release_mode
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-].+)?$ ]]; then
+            echo "official=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "official=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
       - name: Verify tag matches package.json
+        if: steps.release_mode.outputs.official == 'true'
         run: |
           VERSION="$(bun -e "import pkg from './package.json' assert { type: 'json' }; process.stdout.write(pkg.version)")"
           TAG="${GITHUB_REF_NAME#v}"
@@ -43,6 +55,7 @@ jobs:
           echo "TARBALL=artifacts/opencode-novel-${VERSION}.tgz" >> "$GITHUB_ENV"
 
       - name: Configure npm auth
+        if: steps.release_mode.outputs.official == 'true'
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
@@ -54,17 +67,26 @@ jobs:
           echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> ~/.npmrc
 
       - name: Verify npm auth
+        if: steps.release_mode.outputs.official == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm whoami --registry=https://registry.npmjs.org/
 
       - name: Publish to npm
+        if: steps.release_mode.outputs.official == 'true'
         env:
           NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: bun publish "$TARBALL" --access public
 
+      - name: Skip npm publish for non-version tags
+        if: steps.release_mode.outputs.official != 'true'
+        run: |
+          echo "Tag '${{ steps.release_mode.outputs.tag }}' is for workflow orchestration test."
+          echo "Skip npm publish and GitHub release."
+
       - name: GitHub Release
+        if: steps.release_mode.outputs.official == 'true'
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
