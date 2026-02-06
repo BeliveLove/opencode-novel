@@ -5,9 +5,9 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { applyEdits, modify, type ParseError, parse } from "jsonc-parser";
 import { loadBuiltinCommands } from "../src/features/builtin-commands/commands";
-import { loadBuiltinSkills } from "../src/features/builtin-skills/skills";
+import { getBuiltinSkillInstallFiles, loadBuiltinSkills } from "../src/features/builtin-skills";
 import { normalizeLf, writeTextFile } from "../src/shared/fs/write";
-import { buildCommandMarkdown, buildSkillMarkdown } from "../src/shared/opencode/artifacts";
+import { buildCommandMarkdown } from "../src/shared/opencode/artifacts";
 
 type UninstallTarget = "global" | "project";
 
@@ -277,13 +277,19 @@ function main() {
   const skippedSkills: Array<{ path: string; reason: string }> = [];
   const skills = loadBuiltinSkills();
   for (const def of Object.values(skills)) {
-    const skillFolder = path.join(skillDir, def.name);
-    const outPath = path.join(skillFolder, "SKILL.md");
-    const expected = buildSkillMarkdown(def);
-    const result = removeFileIfUnmodified(outPath, expected, options);
-    if (result.removed && !result.skipped) removedSkills.push(outPath);
-    else skippedSkills.push({ path: outPath, reason: result.reason ?? "skipped" });
-    removeDirIfEmpty(skillFolder, options);
+    const installFiles = getBuiltinSkillInstallFiles(def);
+    const dirsToCleanup = new Set<string>([path.join(skillDir, def.name)]);
+    for (const installFile of installFiles) {
+      const outPath = path.join(skillDir, installFile.relativePath);
+      dirsToCleanup.add(path.dirname(outPath));
+      const result = removeFileIfUnmodified(outPath, installFile.content, options);
+      if (result.removed && !result.skipped) removedSkills.push(outPath);
+      else skippedSkills.push({ path: outPath, reason: result.reason ?? "skipped" });
+    }
+    const sortedDirs = Array.from(dirsToCleanup).sort((a, b) => b.length - a.length);
+    for (const dir of sortedDirs) {
+      removeDirIfEmpty(dir, options);
+    }
   }
 
   const novelConfigPath = path.join(installRoot, "novel.jsonc");

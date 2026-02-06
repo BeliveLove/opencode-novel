@@ -20,6 +20,6 @@ export const AUDIENCE_CLASSIFIER_SKILL = `<skill-instruction>
 
 ## Rules
 - 仅输出 audience 域标签。
-- 对 `all-ages` / `adult-18-plus` 冲突要高敏感，证据不足则降置信度并在 notes 说明。
+- 对 all-ages / adult-18-plus 冲突要高敏感，证据不足则降置信度并在 notes 说明。
 - 标签应可用于后续语气/节奏控制，避免输出过泛标签。
 </skill-instruction>`;

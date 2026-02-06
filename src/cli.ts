@@ -5,9 +5,9 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { applyEdits, modify, type ParseError, parse } from "jsonc-parser";
 import { loadBuiltinCommands } from "./features/builtin-commands/commands";
-import { loadBuiltinSkills } from "./features/builtin-skills/skills";
+import { getBuiltinSkillInstallFiles, loadBuiltinSkills } from "./features/builtin-skills";
 import { normalizeLf, writeTextFile } from "./shared/fs/write";
-import { buildCommandMarkdown, buildSkillMarkdown, yamlQuote } from "./shared/opencode/artifacts";
+import { buildCommandMarkdown, yamlQuote } from "./shared/opencode/artifacts";
 
 type InstallTarget = "global" | "project";
 
@@ -399,8 +399,11 @@ function runInstall(argv: string[]): void {
 
   const skills = loadBuiltinSkills();
   for (const def of Object.values(skills)) {
-    const outPath = path.join(skillDir, def.name, "SKILL.md");
-    writeFileSafe(outPath, buildSkillMarkdown(def), options);
+    const files = getBuiltinSkillInstallFiles(def);
+    for (const file of files) {
+      const outPath = path.join(skillDir, file.relativePath);
+      writeFileSafe(outPath, file.content, options);
+    }
   }
 
   const novelConfigPath = path.join(installRoot, "novel.jsonc");
@@ -466,13 +469,19 @@ function runUninstall(argv: string[]): void {
   const skippedSkills: Array<{ path: string; reason: string }> = [];
   const skills = loadBuiltinSkills();
   for (const def of Object.values(skills)) {
-    const skillFolder = path.join(skillDir, def.name);
-    const outPath = path.join(skillFolder, "SKILL.md");
-    const expected = buildSkillMarkdown(def);
-    const result = removeFileIfUnmodified(outPath, expected, options);
-    if (result.removed && !result.skipped) removedSkills.push(outPath);
-    else skippedSkills.push({ path: outPath, reason: result.reason ?? "skipped" });
-    removeDirIfEmpty(skillFolder, options);
+    const installFiles = getBuiltinSkillInstallFiles(def);
+    const dirsToCleanup = new Set<string>([path.join(skillDir, def.name)]);
+    for (const installFile of installFiles) {
+      const outPath = path.join(skillDir, installFile.relativePath);
+      dirsToCleanup.add(path.dirname(outPath));
+      const result = removeFileIfUnmodified(outPath, installFile.content, options);
+      if (result.removed && !result.skipped) removedSkills.push(outPath);
+      else skippedSkills.push({ path: outPath, reason: result.reason ?? "skipped" });
+    }
+    const sortedDirs = Array.from(dirsToCleanup).sort((a, b) => b.length - a.length);
+    for (const dir of sortedDirs) {
+      removeDirIfEmpty(dir, options);
+    }
   }
 
   const novelConfigPath = path.join(installRoot, "novel.jsonc");

@@ -5,11 +5,10 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { applyEdits, modify, type ParseError, parse } from "jsonc-parser";
 import { loadBuiltinCommands } from "../src/features/builtin-commands/commands";
-import { loadBuiltinSkills } from "../src/features/builtin-skills/skills";
+import { getBuiltinSkillInstallFiles, loadBuiltinSkills } from "../src/features/builtin-skills";
 import { writeTextFile } from "../src/shared/fs/write";
 import {
   buildCommandMarkdown,
-  buildSkillMarkdown,
   yamlQuote,
 } from "../src/shared/opencode/artifacts";
 
@@ -197,8 +196,11 @@ function main() {
 
   const skills = loadBuiltinSkills();
   for (const def of Object.values(skills)) {
-    const outPath = path.join(skillDir, def.name, "SKILL.md");
-    writeFileSafe(outPath, buildSkillMarkdown(def), options);
+    const files = getBuiltinSkillInstallFiles(def);
+    for (const file of files) {
+      const outPath = path.join(skillDir, file.relativePath);
+      writeFileSafe(outPath, file.content, options);
+    }
   }
 
   const novelConfigPath = path.join(installRoot, "novel.jsonc");

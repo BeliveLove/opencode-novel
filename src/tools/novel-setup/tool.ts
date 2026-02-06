@@ -3,11 +3,11 @@ import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import { loadBuiltinCommands } from "../../features/builtin-commands";
-import { loadBuiltinSkills } from "../../features/builtin-skills";
+import { getBuiltinSkillInstallFiles, loadBuiltinSkills } from "../../features/builtin-skills";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { toRelativePosixPath } from "../../shared/fs/paths";
 import { writeTextFile } from "../../shared/fs/write";
-import { buildCommandMarkdown, buildSkillMarkdown } from "../../shared/opencode/artifacts";
+import { buildCommandMarkdown } from "../../shared/opencode/artifacts";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
 import { ensureNovelScaffold } from "../novel-scaffold/scaffold";
 import type { NovelSetupArgs, NovelSetupResultJson } from "./types";
@@ -127,15 +127,17 @@ export function createNovelSetupTool(deps: {
         const defs = loadBuiltinSkills();
         for (const def of Object.values(defs)) {
           if (disabledSkills.has(def.name.toLowerCase())) continue;
-
-          const outAbs = path.join(skillsDirAbs, def.name, "SKILL.md");
-          const outRel = toRelativePosixPath(rootDir, outAbs);
-          if (!forceOverwriteSkills && existsSync(outAbs)) {
-            skippedSkills.push(outRel);
-            continue;
+          const installFiles = getBuiltinSkillInstallFiles(def);
+          for (const installFile of installFiles) {
+            const outAbs = path.join(skillsDirAbs, installFile.relativePath);
+            const outRel = toRelativePosixPath(rootDir, outAbs);
+            if (!forceOverwriteSkills && existsSync(outAbs)) {
+              skippedSkills.push(outRel);
+              continue;
+            }
+            writeTextFile(outAbs, installFile.content, { mode: "always" });
+            writtenSkills.push(outRel);
           }
-          writeTextFile(outAbs, buildSkillMarkdown(def), { mode: "always" });
-          writtenSkills.push(outRel);
         }
       }
 
