@@ -10,4 +10,6 @@ export const NOVEL_FACTION_RELATIONS_SKILL = `<skill-instruction>
 
 ## Notes
 - Mermaid 图建议用 graph TD/graph LR。
+- 优先读取 .opencode/novel/profile.md 的 genre/structure 控制势力规模与信息密度。
+- 若画像缺失或维度缺失，需在 Recommendations 标注不确定性来源。
 </skill-instruction>`;

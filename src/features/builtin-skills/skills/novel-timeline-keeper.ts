@@ -7,4 +7,8 @@ export const NOVEL_TIMELINE_KEEPER_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（章节 frontmatter.timeline）
+
+## Constraints
+- 优先读取 .opencode/novel/profile.md 的 structure 字段辅助时序校验。
+- 若 structure 缺失，需在 Findings 标记“结构维度缺失风险”。
 </skill-instruction>`;

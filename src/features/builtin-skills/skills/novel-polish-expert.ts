@@ -7,4 +7,8 @@ export const NOVEL_POLISH_EXPERT_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2；含 conservative/rewrite 两档）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（默认输出新文件）
+
+## Constraints
+- 优先读取 .opencode/novel/profile.md 的 audience/emotion，控制语气与节奏。
+- 若画像缺失，需在 Assumptions 标注 profile=none 并降低风格强约束。
 </skill-instruction>`;

@@ -7,4 +7,8 @@ export const NOVEL_FLAW_FINDER_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2）
 4) ## Questions（最多 3 个）
 5) ## Files To Update
+
+## Constraints
+- 优先消费 .opencode/novel/profile.md 全量画像，问题优先级需与画像偏离程度联动。
+- 若画像不完整，仍需输出可执行清单，并单列“画像缺失导致的不确定项”。
 </skill-instruction>`;

@@ -100,7 +100,7 @@ const BUILTIN_COMMANDS: Record<BuiltinCommandName, Omit<CommandDefinition, "name
   },
   "novel-chapter-plan": {
     description: "生成章节计划。",
-    argumentHint: "<chapter_id> [--apply]",
+    argumentHint: "<chapter_id> [--apply] [--skip-profile]",
     template: wrapTemplate(NOVEL_CHAPTER_PLAN_TEMPLATE),
   },
   "novel-extract-entities": {

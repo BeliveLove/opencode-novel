@@ -10,4 +10,6 @@ export const NOVEL_CONTINUATION_EXPERT_SKILL = `<skill-instruction>
 
 ## Constraints
 - 不要直接覆盖 manuscript/chapters/<id>.md 正文，除非用户显式要求 apply。
+- 优先读取 .opencode/novel/profile.md，确保续写方向不偏离题材/流派/受众。
+- 若 profile 为 compact，必须声明缺失维度风险并避免越界扩写。
 </skill-instruction>`;

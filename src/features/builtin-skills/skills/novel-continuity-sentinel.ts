@@ -8,4 +8,8 @@ export const NOVEL_CONTINUITY_SENTINEL_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（具体到文件与字段）
+
+## Constraints
+- 优先读取 .opencode/novel/profile.md 的 conflictWarnings，先修复高风险冲突。
+- 若未提供 profile，必须在 Assumptions 标注 profile=none。
 </skill-instruction>`;

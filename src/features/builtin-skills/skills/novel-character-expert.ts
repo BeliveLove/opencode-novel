@@ -10,4 +10,6 @@ export const NOVEL_CHARACTER_EXPERT_SKILL = `<skill-instruction>
 
 ## Constraints
 - 不要改章节正文；如需修改，只给“最小改动建议”。
+- 优先读取 .opencode/novel/profile.md 的 audience/emotion 字段约束角色弧线与台词风格。
+- 若画像缺失或为 compact 缺字段，需在 Findings 说明偏差风险。
 </skill-instruction>`;

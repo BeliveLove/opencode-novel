@@ -12,4 +12,6 @@ export const NOVEL_ORACLE_SKILL = `<skill-instruction>
 ## Notes
 - 不要编造事实；缺信息用 Questions 追问。
 - 建议必须可执行（可落到章节/线程/角色卡/世界观条款）。
+- 优先读取 .opencode/novel/profile.md 的 genre/trope/structure/emotion。
+- 若 profileMode=compact 且维度缺失，必须显式标注“画像覆盖不足风险”。
 </skill-instruction>`;

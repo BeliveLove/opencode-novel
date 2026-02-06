@@ -7,4 +7,8 @@ export const NOVEL_WORLDBIBLE_KEEPER_SKILL = `<skill-instruction>
 3) ## Recommendations（P0/P1/P2）
 4) ## Questions（最多 3 个）
 5) ## Files To Update（manuscript/bible/world.md / rules.md / glossary.md）
+
+## Constraints
+- 优先读取 .opencode/novel/profile.md 的 genre/trope 作为设定一致性基线。
+- 若画像缺失，先提示补跑画像；本轮降级输出需明确 profile=none。
 </skill-instruction>`;
