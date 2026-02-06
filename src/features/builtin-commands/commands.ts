@@ -6,6 +6,7 @@ import { NOVEL_CHAPTER_PLAN_TEMPLATE } from "./templates/novel-chapter-plan";
 import { NOVEL_CHAPTER_REVIEW_TEMPLATE } from "./templates/novel-chapter-review";
 import { NOVEL_CHARACTER_TEMPLATE } from "./templates/novel-character";
 import { NOVEL_CHARACTER_REPORT_TEMPLATE } from "./templates/novel-character-report";
+import { NOVEL_CONFIG_CHECK_TEMPLATE } from "./templates/novel-config-check";
 import { NOVEL_CONTINUATION_TEMPLATE } from "./templates/novel-continuation";
 import { NOVEL_CONTINUITY_CHECK_TEMPLATE } from "./templates/novel-continuity-check";
 import { NOVEL_ENTITIES_AUDIT_TEMPLATE } from "./templates/novel-entities-audit";
@@ -58,6 +59,10 @@ const BUILTIN_COMMANDS: Record<BuiltinCommandName, Omit<CommandDefinition, "name
     description: "生成 INDEX/TIMELINE/THREADS_REPORT（派生）。",
     template: wrapTemplate(NOVEL_INDEX_TEMPLATE),
   },
+  "novel-config-check": {
+    description: "检查配置合并与 schema 诊断（source/path 结构化输出）。",
+    template: wrapTemplate(NOVEL_CONFIG_CHECK_TEMPLATE),
+  },
   "novel-entities-audit": {
     description: "实体缺口盘点（可选补 stub）。",
     argumentHint: "[--stubs]",
@@ -95,7 +100,7 @@ const BUILTIN_COMMANDS: Record<BuiltinCommandName, Omit<CommandDefinition, "name
   },
   "novel-chapter-plan": {
     description: "生成章节计划。",
-    argumentHint: "<chapter_id>",
+    argumentHint: "<chapter_id> [--apply]",
     template: wrapTemplate(NOVEL_CHAPTER_PLAN_TEMPLATE),
   },
   "novel-extract-entities": {
@@ -109,17 +114,17 @@ const BUILTIN_COMMANDS: Record<BuiltinCommandName, Omit<CommandDefinition, "name
   },
   "novel-chapter-draft": {
     description: "基于计划生成章节草稿（默认新文件）。",
-    argumentHint: "<chapter_id>",
+    argumentHint: "<chapter_id> [--apply]",
     template: wrapTemplate(NOVEL_CHAPTER_DRAFT_TEMPLATE),
   },
   "novel-continuation": {
     description: "续写下一段/下一章（默认新文件）。",
-    argumentHint: "<chapter_id>",
+    argumentHint: "<chapter_id> [--apply]",
     template: wrapTemplate(NOVEL_CONTINUATION_TEMPLATE),
   },
   "novel-rewrite": {
     description: "按目标重写章节（默认新文件）。",
-    argumentHint: "<chapter_id> [--goal=...]",
+    argumentHint: "<chapter_id> [--goal=...] [--apply]",
     template: wrapTemplate(NOVEL_REWRITE_TEMPLATE),
   },
   "novel-polish": {

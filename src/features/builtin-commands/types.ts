@@ -5,6 +5,7 @@ export type BuiltinCommandName =
   | "novel-style-guide"
   | "novel-bible"
   | "novel-index"
+  | "novel-config-check"
   | "novel-entities-audit"
   | "novel-graph"
   | "novel-character-report"

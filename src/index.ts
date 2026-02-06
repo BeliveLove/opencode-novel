@@ -4,7 +4,9 @@ import { createConfigHandler } from "./plugin-handlers";
 import { createNovelApplyCandidatesTool } from "./tools/novel-apply-candidates";
 import { createNovelBibleTool } from "./tools/novel-bible";
 import { createNovelBootstrapTool } from "./tools/novel-bootstrap";
+import { createNovelCandidatesWriteTool } from "./tools/novel-candidates-write";
 import { createNovelCharacterReportTool } from "./tools/novel-character-report";
+import { createNovelConfigCheckTool } from "./tools/novel-config-check";
 import { createNovelContextPackTool } from "./tools/novel-context-pack";
 import { createNovelContinuityCheckTool } from "./tools/novel-continuity-check";
 import { createNovelEntityGapsTool } from "./tools/novel-entity-gaps";
@@ -16,6 +18,7 @@ import { createNovelIndexTool } from "./tools/novel-index";
 import { createNovelScaffoldTool } from "./tools/novel-scaffold";
 import { createNovelScanTool } from "./tools/novel-scan";
 import { createNovelSetupTool } from "./tools/novel-setup";
+import { createNovelSnapshotTool } from "./tools/novel-snapshot";
 import { createNovelStyleCheckTool } from "./tools/novel-style-check";
 import { createSkillTool } from "./tools/skill";
 import { createSlashcommandTool } from "./tools/slashcommand";
@@ -40,6 +43,7 @@ const NovelPlugin: Plugin = async (ctx) => {
     novel_entity_gaps: createNovelEntityGapsTool({ projectRoot: ctx.directory, config }),
     novel_graph: createNovelGraphTool({ projectRoot: ctx.directory, config }),
     novel_character_report: createNovelCharacterReportTool({ projectRoot: ctx.directory, config }),
+    novel_config_check: createNovelConfigCheckTool({ projectRoot: ctx.directory }),
     novel_context_pack: createNovelContextPackTool({ projectRoot: ctx.directory, config }),
     novel_export: createNovelExportTool({ projectRoot: ctx.directory, config }),
     novel_style_check: createNovelStyleCheckTool({ projectRoot: ctx.directory, config }),
@@ -48,7 +52,9 @@ const NovelPlugin: Plugin = async (ctx) => {
       config,
     }),
     novel_apply_candidates: createNovelApplyCandidatesTool({ projectRoot: ctx.directory, config }),
+    novel_candidates_write: createNovelCandidatesWriteTool({ projectRoot: ctx.directory, config }),
     novel_continuity_check: createNovelContinuityCheckTool({ projectRoot: ctx.directory, config }),
+    novel_snapshot: createNovelSnapshotTool({ projectRoot: ctx.directory, config }),
   };
 
   const compat = config.compat;
