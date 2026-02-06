@@ -1,10 +1,4 @@
-export type TaxonomyDomain =
-  | "genre"
-  | "trope"
-  | "audience"
-  | "emotion"
-  | "structure"
-  | "market";
+export type TaxonomyDomain = "genre" | "trope" | "audience" | "emotion" | "structure" | "market";
 
 export type TaxonomyStatus = "active" | "deprecated";
 

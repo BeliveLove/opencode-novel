@@ -5,14 +5,7 @@ import { getTaxonomyReferenceFiles } from "./references";
 import { TAXONOMY_REGISTRY_V1 } from "./registry";
 import type { TaxonomyDomain } from "./types";
 
-const DOMAINS: TaxonomyDomain[] = [
-  "genre",
-  "trope",
-  "audience",
-  "emotion",
-  "structure",
-  "market",
-];
+const DOMAINS: TaxonomyDomain[] = ["genre", "trope", "audience", "emotion", "structure", "market"];
 
 describe("taxonomy registry", () => {
   it("keeps labels structurally valid and conflict IDs resolvable", () => {

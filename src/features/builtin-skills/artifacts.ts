@@ -1,9 +1,9 @@
+import { buildSkillMarkdown } from "../../shared/opencode/artifacts";
 import {
   buildTaxonomyContractMarkdown,
   buildTaxonomyIntegrationMarkdown,
   getTaxonomyReferenceFiles,
 } from "./taxonomy";
-import { buildSkillMarkdown } from "../../shared/opencode/artifacts";
 import type { SkillDefinition } from "./types";
 
 type SkillExtraFile = {

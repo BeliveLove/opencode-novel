@@ -110,7 +110,7 @@ function buildTaxonomyMarkdown(registry: TaxonomyRegistry): string {
     parts.push("");
   }
 
-  return parts.join("\n").trimEnd() + "\n";
+  return `${parts.join("\n").trimEnd()}\n`;
 }
 
 function buildAliasesMarkdown(registry: TaxonomyRegistry): string {

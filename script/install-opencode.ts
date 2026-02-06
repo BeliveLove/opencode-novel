@@ -7,10 +7,7 @@ import { applyEdits, modify, type ParseError, parse } from "jsonc-parser";
 import { loadBuiltinCommands } from "../src/features/builtin-commands/commands";
 import { getBuiltinSkillInstallFiles, loadBuiltinSkills } from "../src/features/builtin-skills";
 import { writeTextFile } from "../src/shared/fs/write";
-import {
-  buildCommandMarkdown,
-  yamlQuote,
-} from "../src/shared/opencode/artifacts";
+import { buildCommandMarkdown, yamlQuote } from "../src/shared/opencode/artifacts";
 
 type InstallTarget = "global" | "project";
 
