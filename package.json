@@ -1,6 +1,6 @@
 {
   "name": "opencode-novel",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Novel writing workflow plugin for OpenCode (Bun/TypeScript).",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
