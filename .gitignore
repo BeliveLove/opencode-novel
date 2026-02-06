@@ -13,3 +13,10 @@ export/
 # logs / caches
 *.log
 .cache/
+
+# local docs (do not track)
+docs/
+README.md
+CODE_REVIEW_LOW_BARRIER.md
+IMPLEMENTATION_PLAN.md
+小公司AI小说工具产品落地方法论.md
