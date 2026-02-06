@@ -10,7 +10,15 @@ export type BuiltinSkillName =
   | "novel-flaw-finder"
   | "novel-continuation-expert"
   | "novel-polish-expert"
-  | "novel-summary-expert";
+  | "novel-summary-expert"
+  | "taxonomy-registry"
+  | "genre-classifier"
+  | "trope-classifier"
+  | "audience-classifier"
+  | "emotion-classifier"
+  | "structure-classifier"
+  | "market-tagger"
+  | "profile-aggregator";
 
 export type SkillDefinition = {
   name: string;

@@ -1,3 +1,7 @@
+import { AUDIENCE_CLASSIFIER_SKILL } from "./skills/audience-classifier";
+import { EMOTION_CLASSIFIER_SKILL } from "./skills/emotion-classifier";
+import { GENRE_CLASSIFIER_SKILL } from "./skills/genre-classifier";
+import { MARKET_TAGGER_SKILL } from "./skills/market-tagger";
 import { NOVEL_CHARACTER_EXPERT_SKILL } from "./skills/novel-character-expert";
 import { NOVEL_CONTINUATION_EXPERT_SKILL } from "./skills/novel-continuation-expert";
 import { NOVEL_CONTINUITY_SENTINEL_SKILL } from "./skills/novel-continuity-sentinel";
@@ -10,6 +14,10 @@ import { NOVEL_POLISH_EXPERT_SKILL } from "./skills/novel-polish-expert";
 import { NOVEL_SUMMARY_EXPERT_SKILL } from "./skills/novel-summary-expert";
 import { NOVEL_TIMELINE_KEEPER_SKILL } from "./skills/novel-timeline-keeper";
 import { NOVEL_WORLDBIBLE_KEEPER_SKILL } from "./skills/novel-worldbible-keeper";
+import { PROFILE_AGGREGATOR_SKILL } from "./skills/profile-aggregator";
+import { STRUCTURE_CLASSIFIER_SKILL } from "./skills/structure-classifier";
+import { TAXONOMY_REGISTRY_SKILL } from "./skills/taxonomy-registry";
+import { TROPE_CLASSIFIER_SKILL } from "./skills/trope-classifier";
 import type { BuiltinSkillName, BuiltinSkills, SkillDefinition } from "./types";
 
 const BUILTIN_SKILLS: Record<BuiltinSkillName, Omit<SkillDefinition, "name">> = {
@@ -60,6 +68,38 @@ const BUILTIN_SKILLS: Record<BuiltinSkillName, Omit<SkillDefinition, "name">> = 
   "novel-summary-expert": {
     description: "章节回顾/梗概/无剧透文案/编辑向梗概。",
     template: NOVEL_SUMMARY_EXPERT_SKILL,
+  },
+  "taxonomy-registry": {
+    description: "六大域标签字典、别名与冲突规则的维护治理。",
+    template: TAXONOMY_REGISTRY_SKILL,
+  },
+  "genre-classifier": {
+    description: "题材标签判定（genre）。",
+    template: GENRE_CLASSIFIER_SKILL,
+  },
+  "trope-classifier": {
+    description: "流派标签判定（trope）。",
+    template: TROPE_CLASSIFIER_SKILL,
+  },
+  "audience-classifier": {
+    description: "受众标签判定（audience）。",
+    template: AUDIENCE_CLASSIFIER_SKILL,
+  },
+  "emotion-classifier": {
+    description: "情绪承诺标签判定（emotion）。",
+    template: EMOTION_CLASSIFIER_SKILL,
+  },
+  "structure-classifier": {
+    description: "叙事结构标签判定（structure）。",
+    template: STRUCTURE_CLASSIFIER_SKILL,
+  },
+  "market-tagger": {
+    description: "商业标签判定（market）。",
+    template: MARKET_TAGGER_SKILL,
+  },
+  "profile-aggregator": {
+    description: "聚合六维标签结果并输出 profile。",
+    template: PROFILE_AGGREGATOR_SKILL,
   },
 };
 
