@@ -1,9 +1,10 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { executeTool, withTempDir, writeFixtureFile } from "../../../test/utils";
+import { executeTool, extractResultJson, withTempDir, writeFixtureFile } from "../../../test/utils";
 import { NovelConfigSchema } from "../../config/schema";
 import { createNovelApplyCandidatesTool } from "./tool";
+import type { NovelApplyCandidatesResultJson } from "./types";
 
 describe("novel_apply_candidates", () => {
   it("creates entity files and patches frontmatter (dryRun=false)", async () => {
@@ -113,6 +114,79 @@ characters: [char-keep, char-remove]
       expect(chapter).toContain("char-keep");
       expect(chapter).not.toContain("char-remove");
       expect(chapter).not.toContain("$op");
+    });
+  });
+
+  it("optionally creates a snapshot before applying changes", async () => {
+    await withTempDir(async (rootDir) => {
+      const config = NovelConfigSchema.parse({ projectRoot: rootDir });
+
+      writeFixtureFile(
+        rootDir,
+        "manuscript/chapters/ch0001.md",
+        `---
+chapter_id: ch0001
+title: "第一章"
+characters: [char-old]
+---
+
+# 第一章
+`,
+      );
+
+      const candidatesPath = ".opencode/novel/cache/candidates.json";
+      writeFixtureFile(
+        rootDir,
+        candidatesPath,
+        JSON.stringify(
+          {
+            version: 1,
+            generatedAt: "2026-02-03T00:00:00Z",
+            scope: { kind: "chapter", chapter_id: "ch0001" },
+            ops: [
+              {
+                op: "patch_frontmatter",
+                filePath: "manuscript/chapters/ch0001.md",
+                patch: { characters: ["char-new"] },
+                mode: "merge",
+              },
+            ],
+          },
+          null,
+          2,
+        ),
+      );
+
+      const tool = createNovelApplyCandidatesTool({ projectRoot: rootDir, config });
+      const output = await executeTool(tool, {
+        rootDir,
+        candidatesPath,
+        dryRun: false,
+        writeReport: false,
+        snapshot: true,
+        snapshotTag: "before-apply",
+      });
+      const json = extractResultJson(String(output)) as NovelApplyCandidatesResultJson;
+
+      expect(json.snapshot?.enabled).toBeTrue();
+      expect(json.snapshot?.dir).toBeTruthy();
+
+      const snapshotDirAbs = path.join(
+        rootDir,
+        String(json.snapshot?.dir).replaceAll("/", path.sep),
+      );
+      const snapshotChapterAbs = path.join(snapshotDirAbs, "chapters", "ch0001.md");
+      expect(existsSync(snapshotChapterAbs)).toBeTrue();
+
+      const snapshotChapter = readFileSync(snapshotChapterAbs, "utf8");
+      expect(snapshotChapter).toContain("char-old");
+      expect(snapshotChapter).not.toContain("char-new");
+
+      const chapterAfter = readFileSync(
+        path.join(rootDir, "manuscript", "chapters", "ch0001.md"),
+        "utf8",
+      );
+      expect(chapterAfter).toContain("char-new");
     });
   });
 });

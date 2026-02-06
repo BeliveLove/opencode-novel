@@ -3,5 +3,5 @@ export const NOVEL_APPLY_CANDIDATES_TEMPLATE = `目标：把 candidates 以受�
 步骤：
 1) 调用 tool: novel_apply_candidates（默认 dryRun=true）
 2) 展示 APPLY_REPORT 摘要，并询问用户是否执行 dryRun=false
-3) 用户确认后再次调用 novel_apply_candidates { dryRun:false }
+3) 用户确认后再次调用 novel_apply_candidates { dryRun:false, snapshot:true, snapshotTag:"before-apply" }（推荐先快照，便于回滚）
 4) 最后建议：/novel-index 与 /novel-continuity-check 复核。`;

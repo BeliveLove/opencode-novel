@@ -10,6 +10,10 @@ export function renderApplyReportMd(result: NovelApplyCandidatesResultJson): str
   lines.push(`- appliedOps: ${result.appliedOps}`);
   lines.push(`- writtenFiles: ${result.writtenFiles.length}`);
   lines.push(`- skippedOps: ${result.skippedOps.length}`);
+  if (result.snapshot?.enabled) {
+    lines.push(`- snapshotDir: ${result.snapshot.dir ?? "(unknown)"}`);
+    lines.push(`- snapshotSavedFiles: ${result.snapshot.savedFiles.length}`);
+  }
   lines.push("");
 
   lines.push("## Written Files", "");
@@ -23,6 +27,14 @@ export function renderApplyReportMd(result: NovelApplyCandidatesResultJson): str
     lines.push(`- #${s.index}: ${s.reason}`);
   }
   lines.push("");
+
+  if (result.snapshot?.enabled) {
+    lines.push("## Snapshot", "");
+    for (const f of result.snapshot.savedFiles) {
+      lines.push(`- ${f}`);
+    }
+    lines.push("");
+  }
 
   return lines.join("\n");
 }

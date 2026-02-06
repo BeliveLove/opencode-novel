@@ -1,12 +1,13 @@
-import { existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { toRelativePosixPath } from "../../shared/fs/paths";
 import { readTextFileSync } from "../../shared/fs/read";
-import { writeTextFile } from "../../shared/fs/write";
+import { ensureDirForFile, writeTextFile } from "../../shared/fs/write";
 import { buildFrontmatterFile, parseFrontmatter } from "../../shared/markdown/frontmatter";
+import { slugify } from "../../shared/strings/slug";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
 import { renderApplyReportMd } from "./render";
 import type {
@@ -225,6 +226,14 @@ function isUnderDir(filePathAbs: string, dirAbs: string): boolean {
   );
 }
 
+function toSnapshotTimestampUtc(): string {
+  return new Date()
+    .toISOString()
+    .replace(/\.\d{3}Z$/, "Z")
+    .replace("T", "_")
+    .replaceAll(":", "-");
+}
+
 export function createNovelApplyCandidatesTool(deps: {
   projectRoot: string;
   config: NovelConfig;
@@ -237,6 +246,8 @@ export function createNovelApplyCandidatesTool(deps: {
       candidatesPath: tool.schema.string().optional(),
       dryRun: tool.schema.boolean().optional(),
       writeReport: tool.schema.boolean().optional(),
+      snapshot: tool.schema.boolean().optional(),
+      snapshotTag: tool.schema.string().optional(),
     },
     async execute(args: NovelApplyCandidatesArgs) {
       const startedAt = Date.now();
@@ -300,6 +311,49 @@ export function createNovelApplyCandidatesTool(deps: {
       }
 
       const manuscriptDirAbs = path.resolve(path.join(rootDir, deps.config.manuscriptDir));
+      const snapshotEnabled = !dryRun && (args.snapshot ?? false);
+      const snapshotTag = (args.snapshotTag ?? "").trim() || undefined;
+      const snapshotSavedFiles: string[] = [];
+      const snapshotDirAbs = snapshotEnabled
+        ? path.join(
+            manuscriptDirAbs,
+            "snapshots",
+            `${toSnapshotTimestampUtc()}-apply${snapshotTag ? `-${slugify(snapshotTag)}` : ""}`,
+          )
+        : undefined;
+      const snapshottedFiles = new Set<string>();
+
+      const snapshotFile = (absPath: string) => {
+        if (!snapshotEnabled || !snapshotDirAbs) return;
+        if (!existsSync(absPath)) return;
+
+        const key = path.resolve(absPath).toLowerCase();
+        if (snapshottedFiles.has(key)) return;
+        snapshottedFiles.add(key);
+
+        const relUnderManuscript = path.relative(manuscriptDirAbs, absPath);
+        const destAbs = path.join(snapshotDirAbs, relUnderManuscript);
+        ensureDirForFile(destAbs);
+        copyFileSync(absPath, destAbs);
+        snapshotSavedFiles.push(toRelativePosixPath(rootDir, destAbs));
+      };
+
+      if (snapshotEnabled && snapshotDirAbs) {
+        const destAbs = path.join(snapshotDirAbs, "candidates.json");
+        ensureDirForFile(destAbs);
+        try {
+          copyFileSync(candidatesPathAbs, destAbs);
+          snapshotSavedFiles.push(toRelativePosixPath(rootDir, destAbs));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          diagnostics.push({
+            severity: "warn",
+            code: "APPLY_SNAPSHOT_COPY_FAILED",
+            message: `快照保存 candidates 失败: ${message}`,
+            file: toRelativePosixPath(rootDir, candidatesPathAbs),
+          });
+        }
+      }
       const writtenFiles: string[] = [];
       const skippedOps: { index: number; reason: string }[] = [];
       let appliedOps = 0;
@@ -417,6 +471,7 @@ export function createNovelApplyCandidatesTool(deps: {
           const rebuilt = buildFrontmatterFile(nextData, parsedFm.body);
 
           if (!dryRun) {
+            snapshotFile(abs);
             writeTextFile(abs, rebuilt, { mode: "always" });
           }
           writtenFiles.push(toRelativePosixPath(rootDir, abs));
@@ -436,6 +491,20 @@ export function createNovelApplyCandidatesTool(deps: {
         appliedOps,
         writtenFiles: Array.from(new Set(writtenFiles)).sort(),
         skippedOps,
+        snapshot: snapshotEnabled
+          ? {
+              enabled: true,
+              tag: snapshotTag,
+              dir: snapshotDirAbs ? toRelativePosixPath(rootDir, snapshotDirAbs) : undefined,
+              savedFiles: Array.from(new Set(snapshotSavedFiles)).sort(),
+            }
+          : undefined,
+        nextSteps: dryRun
+          ? ["确认无误后运行：/novel-apply-candidates（dryRun=false；建议 snapshot=true）"]
+          : [
+              "/novel-index（更新 INDEX/TIMELINE/THREADS_REPORT）",
+              "/novel-continuity-check（复核一致性）",
+            ],
         reportPath: writeReport ? reportPathRel : undefined,
         diagnostics,
       };
@@ -450,6 +519,11 @@ export function createNovelApplyCandidatesTool(deps: {
           `dryRun: ${dryRun}`,
           `appliedOps: ${appliedOps}`,
           `writtenFiles: ${resultJson.writtenFiles.length}`,
+          `snapshot: ${
+            resultJson.snapshot
+              ? `${resultJson.snapshot.dir ?? "(unknown)"} (${resultJson.snapshot.savedFiles.length})`
+              : "disabled"
+          }`,
           `skippedOps: ${skippedOps.length}`,
           `durationMs: ${durationMs}`,
         ],

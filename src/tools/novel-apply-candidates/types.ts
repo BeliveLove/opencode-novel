@@ -28,6 +28,8 @@ export type NovelApplyCandidatesArgs = {
   candidatesPath?: string;
   dryRun?: boolean;
   writeReport?: boolean;
+  snapshot?: boolean;
+  snapshotTag?: string;
 };
 
 export type NovelApplyCandidatesResultJson = {
@@ -36,6 +38,13 @@ export type NovelApplyCandidatesResultJson = {
   appliedOps: number;
   writtenFiles: string[];
   skippedOps: { index: number; reason: string }[];
+  snapshot?: {
+    enabled: boolean;
+    tag?: string;
+    dir?: string;
+    savedFiles: string[];
+  };
+  nextSteps?: string[];
   reportPath?: string;
   diagnostics: Diagnostic[];
 };
