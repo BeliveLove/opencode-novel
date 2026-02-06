@@ -209,6 +209,14 @@ export function scanNovelProject(deps: {
   const cachePath = join(rootDir, deps.config.index.cacheDir, "scan.json");
   const previousCache = mode === "incremental" ? loadScanCache(cachePath) : null;
   const cachedMaps = buildCachedMaps(previousCache);
+  const cacheStats = {
+    mode,
+    loaded: Boolean(previousCache),
+    written: writeCache,
+    fastHits: 0,
+    hashHits: 0,
+    misses: 0,
+  };
 
   const sortLocale = deps.config.index.stableSortLocale;
 
@@ -307,6 +315,7 @@ export function scanNovelProject(deps: {
       cachedHash.mtimeMs === stats.mtimeMs;
 
     if (fastUnchanged) {
+      cacheStats.fastHits += 1;
       files.push({
         path: relPath,
         mtimeMs: stats.mtimeMs,
@@ -349,6 +358,7 @@ export function scanNovelProject(deps: {
 
     const hashUnchanged = mode === "incremental" && cachedHash?.sha256 === sha256;
     if (hashUnchanged) {
+      cacheStats.hashHits += 1;
       const cachedDiags = cachedMaps.perFileDiagnostics.get(relPath) ?? [];
       perFileDiagnostics.set(relPath, cachedDiags);
       diagnostics.push(...cachedDiags);
@@ -372,6 +382,7 @@ export function scanNovelProject(deps: {
       continue;
     }
 
+    cacheStats.misses += 1;
     const parsed = parseFrontmatter<Record<string, unknown>>(content, {
       file: relPath,
       strict: strictMode,
@@ -703,6 +714,7 @@ export function scanNovelProject(deps: {
       locations: locations.length,
     },
     durationMs,
+    cache: cacheStats,
   };
 
   const result: NovelScanResultJson = {

@@ -25,6 +25,7 @@
     "clean": "rm -rf dist",
     "install:opencode": "bun run script/install-opencode.ts -- --target=global",
     "uninstall:opencode": "bun run script/uninstall-opencode.ts -- --target=global",
+    "benchmark:index": "bun run script/perf-index-benchmark.ts",
     "lint": "biome check --error-on-warnings .",
     "lint:fix": "biome check --write .",
     "typecheck": "tsc --noEmit",

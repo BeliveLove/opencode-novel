@@ -34,6 +34,7 @@ export function createNovelScanTool(deps: {
         summaryLines: [
           `filesScanned: ${final.stats.filesScanned}`,
           `entities: chapters=${final.stats.entities.chapters}, characters=${final.stats.entities.characters}, threads=${final.stats.entities.threads}`,
+          `cache: mode=${final.stats.cache.mode}, fastHits=${final.stats.cache.fastHits}, hashHits=${final.stats.cache.hashHits}, misses=${final.stats.cache.misses}`,
           `durationMs: ${final.stats.durationMs}`,
         ],
         resultJson: final,

@@ -42,7 +42,19 @@ export type NovelScanResultJson = {
   version: 1;
   rootDir: string;
   manuscriptDir: string;
-  stats: { filesScanned: number; entities: Record<string, number>; durationMs: number };
+  stats: {
+    filesScanned: number;
+    entities: Record<string, number>;
+    durationMs: number;
+    cache: {
+      mode: NovelScanMode;
+      loaded: boolean;
+      written: boolean;
+      fastHits: number;
+      hashHits: number;
+      misses: number;
+    };
+  };
   files: NovelFileHash[];
   entities: {
     chapters: ChapterEntity[];

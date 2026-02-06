@@ -63,6 +63,8 @@ export function createNovelIndexTool(deps: {
       outputDir: tool.schema.string().optional(),
       writeDerivedFiles: tool.schema.boolean().optional(),
       forceWrite: tool.schema.boolean().optional(),
+      scanMode: tool.schema.enum(["full", "incremental"]).optional(),
+      writeCache: tool.schema.boolean().optional(),
     },
     async execute(args: NovelIndexArgs) {
       const startedAt = Date.now();
@@ -73,11 +75,13 @@ export function createNovelIndexTool(deps: {
       const outputDir = resolveOutputDir(rootDir, args.outputDir ?? deps.config.index.outputDir);
       const writeDerivedFiles = args.writeDerivedFiles ?? deps.config.index.writeDerivedFiles;
       const forceWrite = args.forceWrite ?? false;
+      const scanMode = args.scanMode ?? "incremental";
+      const writeCache = args.writeCache ?? true;
 
       const scan = loadOrScan({
         projectRoot: deps.projectRoot,
         config: deps.config,
-        args: { rootDir, manuscriptDir, mode: "incremental", writeCache: true },
+        args: { rootDir, manuscriptDir, mode: scanMode, writeCache },
       });
       diagnostics.push(...scan.diagnostics);
 
@@ -197,8 +201,14 @@ export function createNovelIndexTool(deps: {
       }
 
       const durationMs = Date.now() - startedAt;
+      const generatedAt = new Date().toISOString();
       const resultJson: NovelIndexResultJson = {
         version: 1,
+        generatedAt,
+        scanScope: {
+          manuscriptDir,
+          mode: scanMode,
+        },
         outputDir: toRelativePosixPath(rootDir, outputDir),
         writtenFiles: writtenFiles.sort(),
         skippedFiles: skippedFiles.sort(),
@@ -207,15 +217,29 @@ export function createNovelIndexTool(deps: {
           characters: scan.entities.characters.length,
           threads: scan.entities.threads.length,
           durationMs,
+          scan: {
+            filesScanned: scan.stats.filesScanned,
+            durationMs: scan.stats.durationMs,
+            cache: scan.stats.cache,
+          },
         },
+        nextSteps: [
+          "/novel-continuity-check（时间线/引用一致性）",
+          "/novel-foreshadowing-audit（伏笔/承诺对账）",
+          "/novel-style-check（可选：风格一致性）",
+          "/novel-export（导出）",
+        ],
         diagnostics,
       };
 
       return formatToolMarkdownOutput({
         summaryLines: [
+          `generatedAt: ${generatedAt}`,
+          `scanScope: manuscriptDir=${manuscriptDir}, mode=${scanMode}`,
           `outputDir: ${resultJson.outputDir}`,
           `writtenFiles: ${resultJson.writtenFiles.length}`,
           `skippedFiles: ${resultJson.skippedFiles.length}`,
+          `scan: mode=${resultJson.stats.scan.cache.mode}, fastHits=${resultJson.stats.scan.cache.fastHits}, hashHits=${resultJson.stats.scan.cache.hashHits}, misses=${resultJson.stats.scan.cache.misses}`,
           `durationMs: ${durationMs}`,
         ],
         resultJson,
