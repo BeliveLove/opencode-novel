@@ -26,6 +26,13 @@
    - `/novel-chapter-draft ch0001`（生成草稿，默认写新文件）
    - `/novel-export docx`（导出）
 
+## 输出契约（对接方）
+
+- 所有 `/novel-*` 工具命令统一输出四段：`Summary`、`Result (JSON)`、`Diagnostics`、`Next Steps`
+- `Result (JSON)` 统一包含：`version` 与 `schemaVersion`（当前值一致）
+- 对接程序建议优先按 `schemaVersion` 做兼容分支，缺失时回退读取 `version`
+- `novel-index` 结果额外包含 `generatedAt` 与 `scanScope`，用于生成时间/扫描范围审计
+
 ## 配置
 
 配置会按顺序合并（后者覆盖前者）：

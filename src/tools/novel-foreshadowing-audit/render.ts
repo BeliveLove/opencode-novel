@@ -31,5 +31,30 @@ export function renderForeshadowingAuditMd(options: {
   }
   lines.push("");
 
+  lines.push("## Issues (Details)", "");
+  const itemsWithIssues = options.items.filter((x) => x.issues.length > 0);
+  if (itemsWithIssues.length === 0) {
+    lines.push("- (none)", "");
+  } else {
+    for (const item of itemsWithIssues) {
+      lines.push(`### ${item.thread_id}`, "");
+      lines.push(`- evidence: ${item.path}`);
+      for (const issue of item.issues) {
+        lines.push(`- **${issue.severity} ${issue.code}**: ${issue.message}`);
+
+        const ev = issue.evidence?.[0];
+        if (ev) {
+          lines.push(`  - evidence: ${ev.file}${ev.line ? `:${ev.line}` : ""}`);
+        }
+        const fixHint = issue.suggestedFix ?? item.suggestedNextStep;
+        if (fixHint) {
+          lines.push(`  - fix_hint: ${fixHint}`);
+        }
+        lines.push(`  - repro: ${issue.repro ?? "/novel-foreshadowing-audit"}`);
+      }
+      lines.push("");
+    }
+  }
+
   return lines.join("\n");
 }

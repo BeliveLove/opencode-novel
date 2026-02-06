@@ -36,5 +36,6 @@ export type NovelImportResultJson = {
   unclassified: { source_path: string; reason: string }[];
   reportPath?: string;
   importMapPath?: string;
+  nextSteps?: string[];
   diagnostics: Diagnostic[];
 };

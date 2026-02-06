@@ -30,5 +30,6 @@ export type NovelEntityGapsResultJson = {
   missing: MissingEntityRef[];
   orphans: OrphanEntity[];
   createdStubs: string[];
+  nextSteps?: string[];
   diagnostics: Diagnostic[];
 };

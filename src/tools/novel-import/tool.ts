@@ -432,6 +432,11 @@ export function createNovelImportTool(deps: {
         unclassified,
         reportPath: writeReport ? reportPathRel : undefined,
         importMapPath: importMapPathRel,
+        nextSteps: [
+          "/novel-index（生成 INDEX/TIMELINE/THREADS_REPORT）",
+          "/novel-entities-audit --stubs（可选：自动补 stub）",
+          "/novel-extract-entities（生成 candidates.json）",
+        ],
         diagnostics,
       };
 

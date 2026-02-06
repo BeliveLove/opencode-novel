@@ -1,4 +1,4 @@
-import type { Diagnostic } from "../../shared/errors/diagnostics";
+import type { Diagnostic, DiagnosticEvidence } from "../../shared/errors/diagnostics";
 
 export type NovelForeshadowingArgs = {
   rootDir?: string;
@@ -10,12 +10,20 @@ export type NovelForeshadowingArgs = {
 
 export type ThreadAuditItem = {
   thread_id: string;
+  path: string;
   type?: string;
   status?: string;
   opened_in?: string;
   expected_close_by?: string;
   closed_in?: string | null;
-  issues: { severity: "error" | "warn" | "info"; code: string; message: string }[];
+  issues: {
+    severity: "error" | "warn" | "info";
+    code: string;
+    message: string;
+    evidence?: DiagnosticEvidence[];
+    suggestedFix?: string;
+    repro?: string;
+  }[];
   suggestedNextStep?: string;
 };
 
@@ -30,5 +38,6 @@ export type NovelForeshadowingResultJson = {
     durationMs: number;
   };
   items: ThreadAuditItem[];
+  nextSteps?: string[];
   diagnostics: Diagnostic[];
 };

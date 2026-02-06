@@ -10,6 +10,8 @@ export type NovelStyleArgs = {
   manuscriptDir?: string;
   outputDir?: string;
   scope?: NovelStyleScope;
+  catchphraseMaxCount?: number;
+  catchphraseReportMissing?: boolean;
   writeReport?: boolean;
 };
 
@@ -19,6 +21,7 @@ export type StyleFinding = {
   message: string;
   evidence: DiagnosticEvidence[];
   suggestedFix?: string;
+  repro?: string;
 };
 
 export type NovelStyleResultJson = {
@@ -26,5 +29,6 @@ export type NovelStyleResultJson = {
   reportPath?: string;
   stats: { warns: number; infos: number; durationMs: number };
   findings: StyleFinding[];
+  nextSteps?: string[];
   diagnostics: Diagnostic[];
 };

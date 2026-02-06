@@ -545,6 +545,9 @@ export function createNovelContinuityCheckTool(deps: {
           (a.evidence[0]?.file ?? "").localeCompare(b.evidence[0]?.file ?? ""),
       );
 
+      const repro = "/novel-continuity-check --scope=all";
+      findings = findings.map((f) => ({ ...f, repro }));
+
       const errors = findings.filter((f) => f.severity === "error").length;
       const warns = findings.filter((f) => f.severity === "warn").length;
       const infos = findings.filter((f) => f.severity === "info").length;
@@ -565,6 +568,13 @@ export function createNovelContinuityCheckTool(deps: {
         reportPath: writeReport ? reportPathRel : undefined,
         stats: { errors, warns, infos, durationMs },
         findings,
+        nextSteps:
+          errors > 0 || warns > 0
+            ? [
+                "修复 CONTINUITY_REPORT.md 中的问题后重新运行：/novel-continuity-check",
+                "/novel-export（修复后导出）",
+              ]
+            : ["/novel-export（导出）"],
         diagnostics,
       };
 

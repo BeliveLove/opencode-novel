@@ -19,6 +19,7 @@ export type ContinuityFinding = {
   message: string;
   evidence: DiagnosticEvidence[];
   suggestedFix?: string;
+  repro?: string;
 };
 
 export type NovelContinuityResultJson = {
@@ -26,5 +27,6 @@ export type NovelContinuityResultJson = {
   reportPath?: string;
   stats: { errors: number; warns: number; infos: number; durationMs: number };
   findings: ContinuityFinding[];
+  nextSteps?: string[];
   diagnostics: Diagnostic[];
 };

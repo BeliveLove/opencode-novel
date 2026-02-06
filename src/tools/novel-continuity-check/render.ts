@@ -20,7 +20,10 @@ export function renderContinuityReportMd(options: {
     const loc = `${ev.file}${ev.line ? `:${ev.line}` : ""}`;
     lines.push(`- **${f.severity} ${f.ruleId}**: ${f.message} (${loc})`);
     if (f.suggestedFix) {
-      lines.push(`  - suggestedFix: ${f.suggestedFix}`);
+      lines.push(`  - fix_hint: ${f.suggestedFix}`);
+    }
+    if (f.repro) {
+      lines.push(`  - repro: ${f.repro}`);
     }
     if (ev.excerpt) {
       lines.push(`  - excerpt: ${ev.excerpt}`);

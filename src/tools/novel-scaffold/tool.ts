@@ -43,6 +43,11 @@ export function createNovelScaffoldTool(deps: {
         writtenFiles: scaffold.writtenFiles,
         skippedExisting: scaffold.skippedExisting,
         configPath: scaffold.configPath,
+        nextSteps: [
+          "/novel-index（生成 INDEX/TIMELINE/THREADS_REPORT）",
+          "/novel-import --from=<path>（可选：迁移旧稿）",
+          "/novel-chapter-plan ch0001（开始写第 1 章）",
+        ],
         diagnostics: scaffold.diagnostics,
       };
 

@@ -91,4 +91,63 @@ close_plan: "之后回收"
       expect(json.diagnostics.some((d) => d.code === "THREADS_DISABLED")).toBeTrue();
     });
   });
+
+  it("sorts unresolved threads by expected_close_by chapter order", async () => {
+    await withTempDir(async (rootDir) => {
+      const config = NovelConfigSchema.parse({ projectRoot: rootDir });
+
+      writeFixtureFile(
+        rootDir,
+        "manuscript/chapters/ch0001.md",
+        `---
+chapter_id: ch0001
+title: "第一章"
+---
+`,
+      );
+      writeFixtureFile(
+        rootDir,
+        "manuscript/chapters/ch0002.md",
+        `---
+chapter_id: ch0002
+title: "第二章"
+---
+`,
+      );
+
+      writeFixtureFile(
+        rootDir,
+        "manuscript/threads/th-a-late.md",
+        `---
+thread_id: th-a-late
+status: open
+expected_close_by: ch0002
+close_plan: "第二章后回收"
+---
+`,
+      );
+      writeFixtureFile(
+        rootDir,
+        "manuscript/threads/th-z-early.md",
+        `---
+thread_id: th-z-early
+status: open
+expected_close_by: ch0001
+close_plan: "第一章回收"
+---
+`,
+      );
+
+      const tool = createNovelForeshadowingAuditTool({ projectRoot: rootDir, config });
+      const output = await executeTool(tool, {
+        rootDir,
+        writeReport: false,
+      } satisfies NovelForeshadowingArgs);
+
+      const json = extractResultJson(String(output)) as NovelForeshadowingResultJson;
+      const sortedIds = json.items.map((item) => item.thread_id);
+
+      expect(sortedIds).toEqual(["th-z-early", "th-a-late"]);
+    });
+  });
 });

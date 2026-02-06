@@ -77,6 +77,8 @@ export function createNovelStyleCheckTool(deps: {
           tool.schema.object({ kind: tool.schema.literal("character"), id: tool.schema.string() }),
         ])
         .optional(),
+      catchphraseMaxCount: tool.schema.number().int().nonnegative().optional(),
+      catchphraseReportMissing: tool.schema.boolean().optional(),
       writeReport: tool.schema.boolean().optional(),
     },
     async execute(args: NovelStyleArgs) {
@@ -89,6 +91,10 @@ export function createNovelStyleCheckTool(deps: {
         ? (args.outputDir as string)
         : path.resolve(path.join(rootDir, args.outputDir ?? deps.config.index.outputDir));
       const writeReport = args.writeReport ?? true;
+      const catchphraseMaxCount =
+        args.catchphraseMaxCount ?? deps.config.styleGuide.checks.catchphrase.maxCount;
+      const catchphraseReportMissing =
+        args.catchphraseReportMissing ?? deps.config.styleGuide.checks.catchphrase.reportMissing;
 
       const scan = loadOrScan({
         projectRoot: deps.projectRoot,
@@ -159,7 +165,6 @@ export function createNovelStyleCheckTool(deps: {
         }
       }
 
-      const catchphraseThreshold = 10;
       for (const character of scan.entities.characters) {
         const abs = fromRelativePosixPath(rootDir, character.path);
         if (!existsSync(abs)) continue;
@@ -182,7 +187,7 @@ export function createNovelStyleCheckTool(deps: {
 
         for (const phrase of catchphrases) {
           const count = findOccurrences(corpus, phrase).length;
-          if (count === 0 || count > catchphraseThreshold) {
+          if ((catchphraseReportMissing && count === 0) || count > catchphraseMaxCount) {
             findings.push({
               severity: "info",
               code: "STYLE_CATCHPHRASE_STATS",
@@ -204,6 +209,11 @@ export function createNovelStyleCheckTool(deps: {
           a.message.localeCompare(b.message),
       );
 
+      const repro = "/novel-style-check --scope=all";
+      for (const finding of findings) {
+        finding.repro = repro;
+      }
+
       const warns = findings.filter((f) => f.severity === "warn").length;
       const infos = findings.filter((f) => f.severity === "info").length;
 
@@ -221,6 +231,13 @@ export function createNovelStyleCheckTool(deps: {
         reportPath: writeReport ? reportPathRel : undefined,
         stats: { warns, infos, durationMs },
         findings,
+        nextSteps:
+          warns > 0
+            ? [
+                "修复 STYLE_REPORT.md 中的问题后重新运行：/novel-style-check",
+                "/novel-export（修复后导出）",
+              ]
+            : ["/novel-export（导出）"],
         diagnostics,
       };
 

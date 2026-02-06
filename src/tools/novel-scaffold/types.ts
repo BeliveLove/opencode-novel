@@ -16,5 +16,6 @@ export type NovelScaffoldResultJson = {
   writtenFiles: string[];
   skippedExisting: string[];
   configPath?: string;
+  nextSteps?: string[];
   diagnostics: Diagnostic[];
 };

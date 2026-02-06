@@ -196,6 +196,10 @@ export function createNovelEntityGapsTool(deps: {
         missing,
         orphans,
         createdStubs,
+        nextSteps: [
+          "/novel-index（更新 INDEX/TIMELINE/THREADS_REPORT）",
+          "/novel-continuity-check（复核引用一致性）",
+        ],
         diagnostics,
       };
 

@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import type { NovelConfig } from "../../config/schema";
@@ -25,6 +25,8 @@ type ThreadMeta = {
   status?: string;
   type?: string;
 };
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function readThreadMeta(
   rootDir: string,
@@ -87,6 +89,7 @@ export function createNovelForeshadowingAuditTool(deps: {
         : path.resolve(path.join(rootDir, args.outputDir ?? deps.config.index.outputDir));
       const writeReport = args.writeReport ?? true;
       const strictMode = args.strictMode ?? deps.config.continuity.strictMode ?? false;
+      const repro = "/novel-foreshadowing-audit";
 
       const scan = loadOrScan({
         projectRoot: deps.projectRoot,
@@ -95,19 +98,58 @@ export function createNovelForeshadowingAuditTool(deps: {
       });
       diagnostics.push(...scan.diagnostics);
 
+      const threadsEnabled = deps.config.threads.enabled ?? true;
+      if (!threadsEnabled) {
+        diagnostics.push({
+          severity: "info",
+          code: "THREADS_DISABLED",
+          message: "threads.enabled=false，已跳过线程审计。",
+        });
+      }
+
       const chapterIdSet = new Set(scan.entities.chapters.map((c) => c.chapter_id));
+      const chapterOrder = new Map(
+        [...scan.entities.chapters]
+          .map((chapter) => chapter.chapter_id)
+          .sort((a, b) => a.localeCompare(b))
+          .map((chapterId, index) => [chapterId, index] as const),
+      );
 
       const items: ThreadAuditItem[] = [];
-      const threadsReport = scan.entities.threads.map((t) => {
-        const meta = readThreadMeta(rootDir, t.path, diagnostics, deps.config.encoding);
-        return { ...t, ...meta };
-      });
+      const threadsReport = threadsEnabled
+        ? scan.entities.threads.map((t) => {
+            const meta = readThreadMeta(rootDir, t.path, diagnostics, deps.config.encoding);
+            return { ...t, ...meta };
+          })
+        : [];
 
       for (const t of threadsReport) {
         const issues: ThreadAuditItem["issues"] = [];
 
         const status = t.status ?? "open";
         const closePlan = (t as unknown as ThreadMeta).close_plan;
+
+        const staleDaysWarn = deps.config.threads.staleDaysWarn ?? 0;
+        if ((status === "open" || status === "in_progress") && staleDaysWarn > 0) {
+          try {
+            const abs = fromRelativePosixPath(rootDir, t.path);
+            const stats = statSync(abs);
+            const days = Math.floor((Date.now() - stats.mtimeMs) / DAY_MS);
+            if (days >= staleDaysWarn) {
+              issues.push({
+                severity: "warn",
+                code: "THREAD_STALE",
+                message: `线程可能已 ${days} 天未更新（阈值=${staleDaysWarn} 天）。`,
+                evidence: [{ file: t.path }],
+                suggestedFix:
+                  "检查该线程是否需要推进/关闭；更新 thread 卡，或在相关章节补充 threads_advanced/threads_closed。",
+                repro,
+              });
+            }
+          } catch {
+            // ignore
+          }
+        }
 
         if (
           (status === "open" || status === "in_progress") &&
@@ -122,6 +164,10 @@ export function createNovelForeshadowingAuditTool(deps: {
             severity,
             code: "THREAD_NO_CLOSE_PLAN",
             message: "线程未回收但缺少 close_plan。",
+            evidence: [{ file: t.path }],
+            suggestedFix:
+              "补充 close_plan（如何回收/在哪些章节回收），并在对应章节标注 threads_closed。",
+            repro,
           });
         }
 
@@ -130,6 +176,9 @@ export function createNovelForeshadowingAuditTool(deps: {
             severity: "warn",
             code: "THREAD_CLOSED_MISSING_CLOSED_IN",
             message: "线程 status=closed 但 closed_in 为空。",
+            evidence: [{ file: t.path }],
+            suggestedFix: "在 thread 卡中补充 closed_in=回收章节，并在该章节标注 threads_closed。",
+            repro,
           });
         }
 
@@ -138,6 +187,10 @@ export function createNovelForeshadowingAuditTool(deps: {
             severity: "warn",
             code: "THREAD_EXPECTED_CLOSE_INVALID",
             message: `expected_close_by 指向不存在章节: ${t.expected_close_by}`,
+            evidence: [{ file: t.path }],
+            suggestedFix:
+              "修正 expected_close_by 为存在的 chapter_id，或留空并改用 close_plan 说明回收计划。",
+            repro,
           });
         }
 
@@ -146,6 +199,10 @@ export function createNovelForeshadowingAuditTool(deps: {
             severity: strictMode ? "error" : "warn",
             code: "THREAD_CLOSED_IN_INVALID",
             message: `closed_in 指向不存在章节: ${t.closed_in}`,
+            evidence: [{ file: t.path }],
+            suggestedFix:
+              "修正 closed_in 为存在的 chapter_id；必要时把 status 改回 open/in_progress 并补 close_plan。",
+            repro,
           });
         }
 
@@ -157,6 +214,7 @@ export function createNovelForeshadowingAuditTool(deps: {
 
         items.push({
           thread_id: t.thread_id,
+          path: t.path,
           type: t.type,
           status: t.status,
           opened_in: t.opened_in,
@@ -167,7 +225,30 @@ export function createNovelForeshadowingAuditTool(deps: {
         });
       }
 
-      items.sort((a, b) => a.thread_id.localeCompare(b.thread_id));
+      items.sort((a, b) => {
+        const aExpectedOrder =
+          typeof a.expected_close_by === "string"
+            ? chapterOrder.get(a.expected_close_by)
+            : undefined;
+        const bExpectedOrder =
+          typeof b.expected_close_by === "string"
+            ? chapterOrder.get(b.expected_close_by)
+            : undefined;
+
+        if (aExpectedOrder !== undefined && bExpectedOrder !== undefined) {
+          const chapterCmp = aExpectedOrder - bExpectedOrder;
+          if (chapterCmp !== 0) return chapterCmp;
+        }
+
+        if ((aExpectedOrder !== undefined) !== (bExpectedOrder !== undefined)) {
+          return aExpectedOrder !== undefined ? -1 : 1;
+        }
+
+        const expectedCmp = (a.expected_close_by ?? "").localeCompare(b.expected_close_by ?? "");
+        if (expectedCmp !== 0) return expectedCmp;
+
+        return a.thread_id.localeCompare(b.thread_id);
+      });
 
       const counts = { open: 0, in_progress: 0, closed: 0, abandoned: 0 };
       for (const item of items) {
@@ -189,12 +270,29 @@ export function createNovelForeshadowingAuditTool(deps: {
         });
       }
 
+      let hasWarnOrError = false;
+      for (const item of items) {
+        for (const issue of item.issues) {
+          if (issue.severity === "error" || issue.severity === "warn") {
+            hasWarnOrError = true;
+            break;
+          }
+        }
+        if (hasWarnOrError) break;
+      }
+
       const durationMs = Date.now() - startedAt;
       const resultJson: NovelForeshadowingResultJson = {
         version: 1,
         reportPath: writeReport ? auditPathRel : undefined,
         stats: { ...counts, durationMs },
         items,
+        nextSteps: hasWarnOrError
+          ? [
+              "修复 FORESHADOWING_AUDIT.md 中的问题后重新运行：/novel-foreshadowing-audit",
+              "/novel-export（修复后导出）",
+            ]
+          : ["/novel-export（导出）"],
         diagnostics,
       };
 

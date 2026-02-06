@@ -20,7 +20,10 @@ export function renderStyleReportMd(options: {
       `- **${f.severity} ${f.code}**: ${f.message} (${ev.file}${ev.line ? `:${ev.line}` : ""})`,
     );
     if (f.suggestedFix) {
-      lines.push(`  - fix: ${f.suggestedFix}`);
+      lines.push(`  - fix_hint: ${f.suggestedFix}`);
+    }
+    if (f.repro) {
+      lines.push(`  - repro: ${f.repro}`);
     }
     if (ev.excerpt) {
       lines.push(`  - excerpt: ${ev.excerpt}`);
