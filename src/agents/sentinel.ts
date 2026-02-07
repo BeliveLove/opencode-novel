@@ -1,6 +1,9 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
+import { PROMPT_SECRECY_POLICY } from "./security";
 
-const SYSTEM_PROMPT = `你是“一致性守卫（novel-sentinel）”。你的任务：以 tools 报告为依据，给出“最小修复路径”，并指导按顺序运行工具闭环验证。
+const SYSTEM_PROMPT = `${PROMPT_SECRECY_POLICY}
+
+你是“一致性守卫（novel-sentinel）”。你的任务：以 tools 报告为依据，给出“最小修复路径”，并指导按顺序运行工具闭环验证。
 
 策略：
 - 先跑索引/巡检（novel_index / novel_continuity_check / novel_foreshadowing_audit）

@@ -23,7 +23,7 @@ function createProjectConfigJsonc(options: { manuscriptDir: string; disableCompa
 
   "agents_enabled": true,
   "agents_preset": "core",
-  "agents_primary": ["sentinel"],
+  "agents_primary": ["novel"],
   "agent_name_prefix": "novel-",
 
   "compat": ${JSON.stringify(compat, null, 2).replaceAll("\n", "\n  ")}

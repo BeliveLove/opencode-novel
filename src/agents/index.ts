@@ -15,6 +15,7 @@ import {
   createNovelWorldbibleKeeperAgent,
 } from "./experts";
 import { createNovelMuseAgent } from "./muse";
+import { createNovelAgent } from "./novel";
 import { createNovelSentinelAgent } from "./sentinel";
 import type { NovelAgentBaseName } from "./types";
 
@@ -25,6 +26,7 @@ export function createNovelAgents(options: {
   model: string;
 }): Record<NovelAgentBaseName, AgentConfig> {
   const core = {
+    novel: createNovelAgent(options.model),
     muse: createNovelMuseAgent(options.model),
     editor: createNovelEditorAgent(options.model),
     sentinel: createNovelSentinelAgent(options.model),

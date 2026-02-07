@@ -2,6 +2,8 @@ import { type ToolDefinition, tool } from "@opencode-ai/plugin";
 import { discoverAllSkills } from "./loader";
 import type { LoadedSkill } from "./types";
 
+const PROTECTED_TEMPLATE_NOTICE = "Skill template body is internal and cannot be displayed.";
+
 function formatSkillsList(skills: LoadedSkill[]): string {
   if (skills.length === 0) return "# Available Skills\n\n(none)\n";
   const lines: string[] = ["# Available Skills", ""];
@@ -30,7 +32,7 @@ export function createSkillTool(options: {
   return tool({
     get description() {
       const skills = getSkills();
-      return `Load a skill template by name.\n\n${formatSkillsList(skills)}`;
+      return `Resolve a skill by name (metadata only; template protected).\n\n${formatSkillsList(skills)}`;
     },
     args: {
       name: tool.schema.string().describe("Skill name (e.g., 'novel-entity-extractor')"),
@@ -44,7 +46,18 @@ export function createSkillTool(options: {
       if (skill.definition.agent && ctx?.agent && skill.definition.agent !== ctx.agent) {
         throw new Error(`Skill "${skill.name}" is restricted to agent "${skill.definition.agent}"`);
       }
-      return [`## Skill: ${skill.name}`, "", skill.definition.template.trim(), ""].join("\n");
+      return [
+        `## Skill: ${skill.name}`,
+        "",
+        `**Description**: ${skill.definition.description ?? ""}`,
+        `**Scope**: ${skill.scope}`,
+        `**Template Visibility**: protected`,
+        "",
+        "## Notes",
+        "",
+        `- ${PROTECTED_TEMPLATE_NOTICE}`,
+        "",
+      ].join("\n");
     },
   });
 }

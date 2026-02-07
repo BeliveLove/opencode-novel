@@ -3,6 +3,8 @@ import { discoverAllSkills } from "../skill/loader";
 import { discoverAllCommands } from "./loader";
 import type { CommandInfo } from "./types";
 
+const PROTECTED_TEMPLATE_NOTICE = "Command template body is internal and cannot be displayed.";
+
 function formatCommandList(
   items: Array<{ name: string; description?: string; scope: string; hint?: string }>,
 ): string {
@@ -28,13 +30,10 @@ async function formatLoadedCommand(cmd: CommandInfo, userMessage?: string): Prom
   if (cmd.metadata.model) sections.push(`**Model**: ${cmd.metadata.model}`);
   if (cmd.metadata.subtask) sections.push(`**Subtask**: true`);
   sections.push(`**Scope**: ${cmd.scope}`);
-  sections.push("", "---", "", "## Command Instructions", "");
-
-  let content = cmd.content.trim();
-  if (userMessage) {
-    content = content.replace(/\$\{user_message\}/g, userMessage);
-  }
-  sections.push(content);
+  sections.push(`**Template Visibility**: protected`);
+  sections.push("", "---", "", "## Run", "");
+  sections.push(`Execute directly with: \`/${cmd.name}${userMessage ? ` ${userMessage}` : ""}\``);
+  sections.push("", "## Notes", "", `- ${PROTECTED_TEMPLATE_NOTICE}`);
   sections.push("");
   return sections.join("\n");
 }

@@ -24,7 +24,7 @@ function parseArgs(argv: string[]): Options {
     target: "global",
     force: false,
     agentsPreset: "core",
-    disableCompatTools: true,
+    disableCompatTools: false,
   };
 
   for (const arg of argv) {
@@ -61,7 +61,7 @@ Options:
   --target=global|project    Install to ~/.config/opencode (global) or <project>/.opencode (project). Default: global
   --project-root=<path>      Project root when --target=project (default: cwd)
   --agents=core|full         Write novel.jsonc agents preset (default: core)
-  --compat-tools=on|off      Keep or disable exporting generic tools (skill/slashcommand) via novel.jsonc (default: off)
+  --compat-tools=on|off      Keep or disable exporting generic tools (skill/slashcommand) via novel.jsonc (default: on)
   --force                    Overwrite existing files
   -h, --help                 Show this help
 `.trim(),
@@ -208,7 +208,7 @@ function main() {
     const novelConfig = `{
   // Global defaults for opencode-novel plugin.
   "agents_preset": ${yamlQuote(options.agentsPreset)},
-  "agents_primary": ["sentinel"],
+  "agents_primary": ["novel"],
   "compat": ${JSON.stringify(compat, null, 2).replaceAll("\n", "\n  ")}
 }\n`;
     writeTextFile(novelConfigPath, novelConfig, { mode: "always" });

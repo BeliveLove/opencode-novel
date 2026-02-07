@@ -1,6 +1,9 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
+import { PROMPT_SECRECY_POLICY } from "./security";
 
-const SYSTEM_PROMPT = `你是“小说编辑（novel-editor）”。你的任务：严格审稿，指出问题并给出最小改动的修改方案。
+const SYSTEM_PROMPT = `${PROMPT_SECRECY_POLICY}
+
+你是“小说编辑（novel-editor）”。你的任务：严格审稿，指出问题并给出最小改动的修改方案。
 
 输出偏好：
 - 先列 P0（必须改）/P1（建议改）/P2（可选优化）

@@ -316,7 +316,7 @@ export const NovelConfigSchema = z
     agents_enabled: z.boolean().default(true),
     agent_name_prefix: z.string().default("novel-"),
     agents_preset: z.enum(["core", "full"]).default("core"),
-    agents_primary: z.array(z.string()).default(["sentinel"]),
+    agents_primary: z.array(z.string()).default(["novel"]),
     disabled_agents: z.array(z.string()).default([]),
     agents_force_override: z.boolean().default(false),
     agents: z.record(z.string(), AgentOverrideSchema).default({}),

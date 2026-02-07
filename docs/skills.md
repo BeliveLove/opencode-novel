@@ -68,7 +68,7 @@ OpenCode Agent Skills 会从以下位置加载：
 ## 组件与 Agent 交互准则（总览）
 
 - 分层职责：命令层负责编排，Agent 负责推理决策，Tool 负责事实读取与受控执行，Skill 负责领域能力扩展。
-- 主代理策略：默认主代理为 `novel-sentinel`，`novel-muse` 负责创意规划，`novel-editor` 负责审稿裁决。
+- 主代理策略：默认主代理为 `novel`，由其按任务意图编排子代理；`novel-sentinel` 负责一致性，`novel-muse` 负责创意规划，`novel-editor` 负责审稿裁决。
 - 调用顺序：先工具取证，再加载 skill，再产出方案，最后受控落盘与复检。
 - 绑定优先：命令声明了 `agent` 时必须优先使用该代理，未声明时按“巡检→sentinel、创意→muse、审校→editor”路由。
 - 越权限制：内容类 skill 不得改标签字典；标签类 skill 不得改剧情正文；跨维度判定必须禁止。

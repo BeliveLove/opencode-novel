@@ -1,4 +1,5 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
+import { PROMPT_SECRECY_POLICY } from "./security";
 
 function expertBase(options: {
   model: string;
@@ -12,7 +13,7 @@ function expertBase(options: {
     temperature: options.temperature ?? 0.3,
     description: options.description,
     permission: { edit: "deny", bash: "deny", webfetch: "deny" },
-    prompt: options.prompt,
+    prompt: `${PROMPT_SECRECY_POLICY}\n\n${options.prompt}`,
   } satisfies AgentConfig;
 }
 

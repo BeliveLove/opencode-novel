@@ -77,6 +77,11 @@ function applyAgentOverride(
   return next;
 }
 
+function resolveAgentName(baseName: string, prefix: string): string {
+  if (baseName.toLowerCase() === "novel") return "novel";
+  return `${prefix}${baseName}`;
+}
+
 export function createConfigHandler(deps: { pluginConfig: NovelConfig }) {
   const { pluginConfig } = deps;
 
@@ -92,7 +97,7 @@ export function createConfigHandler(deps: { pluginConfig: NovelConfig }) {
     const primary =
       primaryAgents.length > 0
         ? new Set(primaryAgents.map((s) => s.toLowerCase()))
-        : new Set(["sentinel"]);
+        : new Set(["novel"]);
     const forceOverride = pluginConfig.agents_force_override ?? false;
 
     const modelFromUi = typeof config.model === "string" ? (config.model as string) : "";
@@ -103,7 +108,7 @@ export function createConfigHandler(deps: { pluginConfig: NovelConfig }) {
     const merged: Record<string, unknown> = { ...existing };
 
     for (const [baseName, agentConfig] of Object.entries(agents)) {
-      const name = `${prefix}${baseName}`;
+      const name = resolveAgentName(baseName, prefix);
       const baseNameLower = baseName.toLowerCase();
       const nameLower = name.toLowerCase();
       if (disabled.has(baseNameLower) || disabled.has(nameLower)) continue;

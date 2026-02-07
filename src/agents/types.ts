@@ -1,4 +1,4 @@
-export type NovelCoreAgentBaseName = "muse" | "editor" | "sentinel";
+export type NovelCoreAgentBaseName = "novel" | "muse" | "editor" | "sentinel";
 
 export type NovelExpertAgentBaseName =
   | "oracle"
