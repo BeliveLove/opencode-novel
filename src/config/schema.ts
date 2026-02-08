@@ -94,6 +94,32 @@ const ThreadsSchema = z
   })
   .default({ enabled: true, requireClosePlan: true, staleDaysWarn: 30 });
 
+const StructureSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    required_beats: z
+      .array(z.string().min(1))
+      .default(["setup", "inciting_incident", "midpoint", "climax", "resolution"]),
+    min_coverage: z.number().min(0).max(1).default(0.8),
+  })
+  .default({
+    enabled: true,
+    required_beats: ["setup", "inciting_incident", "midpoint", "climax", "resolution"],
+    min_coverage: 0.8,
+  });
+
+const SceneSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    required_fields: z
+      .array(z.enum(["scene_id", "objective", "conflict", "outcome", "hook"]))
+      .default(["scene_id", "objective", "conflict", "outcome"]),
+  })
+  .default({
+    enabled: true,
+    required_fields: ["scene_id", "objective", "conflict", "outcome"],
+  });
+
 const NovelExportFormatSchema = z.enum(["md", "html", "epub", "docx"]);
 const NovelChapterOrderSchema = z.enum(["by_id", "by_timeline", "custom"]);
 const ExportDocxTemplateSchema = z.enum(["default", "manuscript"]);
@@ -103,16 +129,27 @@ const ExportDocxSchema = z
   })
   .default({ template: "default" });
 
-const ExportPreflightCheckSchema = z.enum(["index", "continuity", "foreshadowing", "style"]);
+const ExportPreflightCheckSchema = z.enum([
+  "index",
+  "continuity",
+  "foreshadowing",
+  "style",
+  "structure",
+  "scene",
+  "arc",
+  "pacing",
+]);
 const ExportPreflightSchema = z
   .object({
     enabled: z.boolean().default(false),
-    checks: z.array(ExportPreflightCheckSchema).default(["index", "continuity", "foreshadowing"]),
+    checks: z
+      .array(ExportPreflightCheckSchema)
+      .default(["index", "continuity", "foreshadowing", "structure", "arc", "pacing"]),
     failOn: z.enum(["error", "warn"]).default("error"),
   })
   .default({
     enabled: false,
-    checks: ["index", "continuity", "foreshadowing"],
+    checks: ["index", "continuity", "foreshadowing", "structure", "arc", "pacing"],
     failOn: "error",
   });
 
@@ -310,6 +347,8 @@ export const NovelConfigSchema = z
     index: IndexSchema,
     continuity: ContinuitySchema,
     threads: ThreadsSchema,
+    structure: StructureSchema,
+    scene: SceneSchema,
     export: ExportSchema,
     contextPack: ContextPackSchema,
 

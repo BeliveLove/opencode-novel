@@ -9,17 +9,10 @@ import { ensureDirForFile, normalizeLf, writeTextFile } from "../../shared/fs/wr
 import { createSha256Hex, createSha256HexFromBytes } from "../../shared/hashing/sha256";
 import { buildFrontmatterFile, parseFrontmatter } from "../../shared/markdown/frontmatter";
 import { formatToolMarkdownOutput } from "../../shared/tool-output";
-import type { NovelContinuityResultJson } from "../novel-continuity-check";
-import { createNovelContinuityCheckTool } from "../novel-continuity-check";
-import type { NovelForeshadowingResultJson } from "../novel-foreshadowing-audit";
-import { createNovelForeshadowingAuditTool } from "../novel-foreshadowing-audit";
-import type { NovelIndexResultJson } from "../novel-index";
-import { createNovelIndexTool } from "../novel-index";
 import { loadOrScan } from "../novel-scan/scan";
-import type { NovelStyleResultJson } from "../novel-style-check";
-import { createNovelStyleCheckTool } from "../novel-style-check";
 import { markdownToDocxBytes } from "./docx";
 import { chaptersToEpubBytes } from "./epub";
+import { runPreflight } from "./preflight";
 import { markdownToHtml, wrapHtmlDocument } from "./render";
 import type {
   NovelChapterOrder,
@@ -27,9 +20,6 @@ import type {
   NovelExportArgs,
   NovelExportFormat,
   NovelExportManifest,
-  NovelExportPreflightCheck,
-  NovelExportPreflightFailOn,
-  NovelExportPreflightSummary,
   NovelExportResultJson,
   NovelExportResultJsonV1,
   NovelExportResultJsonV2,
@@ -59,256 +49,6 @@ function ensureChapterHeading(markdownBody: string, title: string): string {
   return `# ${title}\n\n${body}`.trimEnd();
 }
 
-function createFallbackToolContext(directory: string): ToolContext {
-  return {
-    sessionID: "local",
-    messageID: "local",
-    agent: "novel_export",
-    directory,
-    worktree: directory,
-    abort: new AbortController().signal,
-    metadata() {},
-    ask: async () => {},
-  };
-}
-
-function extractResultJson(markdownOutput: string): unknown {
-  const match = markdownOutput.match(/```json\n([\s\S]*?)\n```/);
-  if (!match) {
-    throw new Error("No ```json block found in tool output");
-  }
-  return JSON.parse(match[1]);
-}
-
-function countDiagnostics(diagnostics: Diagnostic[]): {
-  errors: number;
-  warns: number;
-  infos: number;
-} {
-  let errors = 0;
-  let warns = 0;
-  let infos = 0;
-  for (const d of diagnostics) {
-    if (d.severity === "error") errors += 1;
-    else if (d.severity === "warn") warns += 1;
-    else infos += 1;
-  }
-  return { errors, warns, infos };
-}
-
-function shouldBlockPreflight(
-  stats: { errors: number; warns: number },
-  failOn: NovelExportPreflightFailOn,
-): boolean {
-  if (failOn === "warn") return stats.errors + stats.warns > 0;
-  return stats.errors > 0;
-}
-
-async function runPreflight(options: {
-  projectRoot: string;
-  config: NovelConfig;
-  rootDir: string;
-  manuscriptDir: string;
-  enabled: boolean;
-  checks: NovelExportPreflightCheck[];
-  failOn: NovelExportPreflightFailOn;
-  context?: ToolContext;
-}): Promise<{ summary: NovelExportPreflightSummary | undefined; diagnostics: Diagnostic[] }> {
-  if (!options.enabled) return { summary: undefined, diagnostics: [] };
-
-  const ctx = options.context ?? createFallbackToolContext(options.rootDir);
-  const outputDir = options.config.index.outputDir;
-  const diagnostics: Diagnostic[] = [];
-
-  const stats = { errors: 0, warns: 0, infos: 0 };
-  const reports: NovelExportPreflightSummary["reports"] = {};
-  let blocked = false;
-
-  const checks = Array.from(new Set(options.checks));
-
-  const suggestedFixByCheck: Record<NovelExportPreflightCheck, string> = {
-    index:
-      "请先运行 /novel-index，确认能正常生成 INDEX/TIMELINE/THREADS_REPORT 后再重试 /novel-export。",
-    continuity:
-      "请先运行 /novel-continuity-check，修复 CONTINUITY_REPORT.md 中的问题后再重试 /novel-export。",
-    foreshadowing:
-      "请先运行 /novel-foreshadowing-audit，修复 FORESHADOWING_AUDIT.md 中的问题后再重试 /novel-export。",
-    style: "请先运行 /novel-style-check，修复 STYLE_REPORT.md 中的问题后再重试 /novel-export。",
-  };
-
-  const guard = async (check: NovelExportPreflightCheck, fn: () => Promise<void>) => {
-    try {
-      await fn();
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      stats.errors += 1;
-      blocked = true;
-      diagnostics.push({
-        severity: "error",
-        code: "EXPORT_PREFLIGHT_CHECK_FAILED",
-        message: `预检步骤执行失败: ${check} (${message})`,
-        suggestedFix: suggestedFixByCheck[check],
-      });
-    }
-  };
-
-  if (checks.includes("index")) {
-    await guard("index", async () => {
-      const toolDef = createNovelIndexTool({
-        projectRoot: options.projectRoot,
-        config: options.config,
-      });
-      const out = await toolDef.execute(
-        {
-          rootDir: options.rootDir,
-          manuscriptDir: options.manuscriptDir,
-          outputDir,
-          writeDerivedFiles: true,
-        },
-        ctx,
-      );
-      const json = extractResultJson(String(out)) as NovelIndexResultJson;
-      const diagStats = countDiagnostics(json.diagnostics);
-      stats.errors += diagStats.errors;
-      stats.warns += diagStats.warns;
-      stats.infos += diagStats.infos;
-      reports.indexOutputDir = json.outputDir;
-      diagnostics.push(...json.diagnostics);
-      blocked ||= shouldBlockPreflight(diagStats, options.failOn);
-    });
-  }
-
-  if (checks.includes("continuity")) {
-    await guard("continuity", async () => {
-      const toolDef = createNovelContinuityCheckTool({
-        projectRoot: options.projectRoot,
-        config: options.config,
-      });
-      const out = await toolDef.execute(
-        {
-          rootDir: options.rootDir,
-          manuscriptDir: options.manuscriptDir,
-          outputDir,
-          scope: { kind: "all" },
-          writeReport: true,
-        },
-        ctx,
-      );
-      const json = extractResultJson(String(out)) as NovelContinuityResultJson;
-      const diagStats = countDiagnostics(json.diagnostics);
-
-      const combined = {
-        errors: json.stats.errors + diagStats.errors,
-        warns: json.stats.warns + diagStats.warns,
-        infos: json.stats.infos + diagStats.infos,
-      };
-      stats.errors += combined.errors;
-      stats.warns += combined.warns;
-      stats.infos += combined.infos;
-      reports.continuityReportPath = json.reportPath;
-      diagnostics.push(...json.diagnostics);
-      blocked ||= shouldBlockPreflight(combined, options.failOn);
-    });
-  }
-
-  if (checks.includes("foreshadowing")) {
-    await guard("foreshadowing", async () => {
-      const toolDef = createNovelForeshadowingAuditTool({
-        projectRoot: options.projectRoot,
-        config: options.config,
-      });
-      const out = await toolDef.execute(
-        {
-          rootDir: options.rootDir,
-          manuscriptDir: options.manuscriptDir,
-          outputDir,
-          writeReport: true,
-        },
-        ctx,
-      );
-      const json = extractResultJson(String(out)) as NovelForeshadowingResultJson;
-      const diagStats = countDiagnostics(json.diagnostics);
-
-      let issueErrors = 0;
-      let issueWarns = 0;
-      let issueInfos = 0;
-      for (const item of json.items) {
-        for (const issue of item.issues) {
-          if (issue.severity === "error") issueErrors += 1;
-          else if (issue.severity === "warn") issueWarns += 1;
-          else issueInfos += 1;
-        }
-      }
-
-      const combined = {
-        errors: issueErrors + diagStats.errors,
-        warns: issueWarns + diagStats.warns,
-        infos: issueInfos + diagStats.infos,
-      };
-      stats.errors += combined.errors;
-      stats.warns += combined.warns;
-      stats.infos += combined.infos;
-      reports.foreshadowingReportPath = json.reportPath;
-      diagnostics.push(...json.diagnostics);
-      blocked ||= shouldBlockPreflight(combined, options.failOn);
-    });
-  }
-
-  if (checks.includes("style")) {
-    await guard("style", async () => {
-      const toolDef = createNovelStyleCheckTool({
-        projectRoot: options.projectRoot,
-        config: options.config,
-      });
-      const out = await toolDef.execute(
-        {
-          rootDir: options.rootDir,
-          manuscriptDir: options.manuscriptDir,
-          outputDir,
-          scope: { kind: "all" },
-          writeReport: true,
-        },
-        ctx,
-      );
-      const json = extractResultJson(String(out)) as NovelStyleResultJson;
-      const diagStats = countDiagnostics(json.diagnostics);
-
-      const combined = {
-        errors: diagStats.errors,
-        warns: json.stats.warns + diagStats.warns,
-        infos: json.stats.infos + diagStats.infos,
-      };
-      stats.errors += combined.errors;
-      stats.warns += combined.warns;
-      stats.infos += combined.infos;
-      reports.styleReportPath = json.reportPath;
-      diagnostics.push(...json.diagnostics);
-      blocked ||= shouldBlockPreflight(combined, options.failOn);
-    });
-  }
-
-  const summary: NovelExportPreflightSummary = {
-    enabled: true,
-    blocked,
-    checks,
-    failOn: options.failOn,
-    stats,
-    reports,
-  };
-
-  if (blocked) {
-    diagnostics.push({
-      severity: "error",
-      code: "EXPORT_PREFLIGHT_BLOCKED",
-      message: `预检未通过（failOn=${options.failOn}）。请先修复报告中的问题后再导出。`,
-      suggestedFix:
-        "建议依次运行：/novel-index、/novel-continuity-check、/novel-foreshadowing-audit（以及 /novel-style-check），修复后重新 /novel-export。",
-    });
-  }
-
-  return { summary, diagnostics };
-}
-
 export function createNovelExportTool(deps: {
   projectRoot: string;
   config: NovelConfig;
@@ -329,7 +69,18 @@ export function createNovelExportTool(deps: {
       docxTemplate: tool.schema.enum(["default", "manuscript"]).optional(),
       preflight: tool.schema.boolean().optional(),
       preflightChecks: tool.schema
-        .array(tool.schema.enum(["index", "continuity", "foreshadowing", "style"]))
+        .array(
+          tool.schema.enum([
+            "index",
+            "continuity",
+            "foreshadowing",
+            "style",
+            "structure",
+            "scene",
+            "arc",
+            "pacing",
+          ]),
+        )
         .optional(),
       preflightFailOn: tool.schema.enum(["error", "warn"]).optional(),
     },
@@ -351,7 +102,14 @@ export function createNovelExportTool(deps: {
 
       const preflightEnabled = args.preflight ?? deps.config.export.preflight.enabled ?? false;
       const preflightChecks = args.preflightChecks ??
-        deps.config.export.preflight.checks ?? ["index", "continuity", "foreshadowing"];
+        deps.config.export.preflight.checks ?? [
+          "index",
+          "continuity",
+          "foreshadowing",
+          "structure",
+          "arc",
+          "pacing",
+        ];
       const preflightFailOn =
         args.preflightFailOn ?? deps.config.export.preflight.failOn ?? "error";
 

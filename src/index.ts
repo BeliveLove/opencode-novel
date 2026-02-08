@@ -5,6 +5,7 @@ import { createNovelApplyCandidatesTool } from "./tools/novel-apply-candidates";
 import { createNovelBibleTool } from "./tools/novel-bible";
 import { createNovelBootstrapTool } from "./tools/novel-bootstrap";
 import { createNovelCandidatesWriteTool } from "./tools/novel-candidates-write";
+import { createNovelChapterPlanTool } from "./tools/novel-chapter-plan";
 import { createNovelCharacterReportTool } from "./tools/novel-character-report";
 import { createNovelConfigCheckTool } from "./tools/novel-config-check";
 import { createNovelContextPackTool } from "./tools/novel-context-pack";
@@ -15,10 +16,13 @@ import { createNovelForeshadowingAuditTool } from "./tools/novel-foreshadowing-a
 import { createNovelGraphTool } from "./tools/novel-graph";
 import { createNovelImportTool } from "./tools/novel-import";
 import { createNovelIndexTool } from "./tools/novel-index";
+import { createNovelOutlineTool } from "./tools/novel-outline";
 import { createNovelScaffoldTool } from "./tools/novel-scaffold";
 import { createNovelScanTool } from "./tools/novel-scan";
+import { createNovelSceneCheckTool } from "./tools/novel-scene-check";
 import { createNovelSetupTool } from "./tools/novel-setup";
 import { createNovelSnapshotTool } from "./tools/novel-snapshot";
+import { createNovelStructureCheckTool } from "./tools/novel-structure-check";
 import { createNovelStyleCheckTool } from "./tools/novel-style-check";
 import { createSkillTool } from "./tools/skill";
 import { createSlashcommandTool } from "./tools/slashcommand";
@@ -54,6 +58,10 @@ const NovelPlugin: Plugin = async (ctx) => {
     novel_apply_candidates: createNovelApplyCandidatesTool({ projectRoot: ctx.directory, config }),
     novel_candidates_write: createNovelCandidatesWriteTool({ projectRoot: ctx.directory, config }),
     novel_continuity_check: createNovelContinuityCheckTool({ projectRoot: ctx.directory, config }),
+    novel_structure_check: createNovelStructureCheckTool({ projectRoot: ctx.directory, config }),
+    novel_scene_check: createNovelSceneCheckTool({ projectRoot: ctx.directory, config }),
+    novel_outline: createNovelOutlineTool({ projectRoot: ctx.directory, config }),
+    novel_chapter_plan: createNovelChapterPlanTool({ projectRoot: ctx.directory, config }),
     novel_snapshot: createNovelSnapshotTool({ projectRoot: ctx.directory, config }),
   };
 

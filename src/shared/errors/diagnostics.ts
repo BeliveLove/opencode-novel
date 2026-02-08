@@ -25,9 +25,13 @@ export function inferReproFromDiagnosticCode(code: string): string | undefined {
   if (code.startsWith("INDEX_") || code.startsWith("SCAN_") || code === "PARSE_FRONTMATTER")
     return "/novel-index";
   if (code.startsWith("CONT_")) return "/novel-continuity-check";
+  if (code.startsWith("STR_")) return "/novel-structure-check";
+  if (code.startsWith("SCN_")) return "/novel-scene-check";
   if (code.startsWith("THREAD_") || code === "THREADS_DISABLED")
     return "/novel-foreshadowing-audit";
   if (code.startsWith("STYLE_")) return "/novel-style-check";
+  if (code.startsWith("OUTLINE_")) return "/novel-outline";
+  if (code.startsWith("PLAN_")) return "/novel-chapter-plan";
   if (code.startsWith("ENTITY_")) return "/novel-entities-audit";
   if (code.startsWith("APPLY_")) return "/novel-apply-candidates";
   if (code.startsWith("IMPORT_")) return "/novel-import";

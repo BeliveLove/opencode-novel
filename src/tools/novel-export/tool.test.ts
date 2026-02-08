@@ -163,6 +163,54 @@ timeline:
     });
   });
 
+  it("blocks export when structure preflight warns and failOn=warn", async () => {
+    await withTempDir(async (rootDir) => {
+      const config = NovelConfigSchema.parse({
+        projectRoot: rootDir,
+        export: { preflight: { enabled: true, checks: ["structure"], failOn: "warn" } },
+      });
+
+      writeFixtureFile(
+        rootDir,
+        "manuscript/chapters/ch0001.md",
+        `---
+chapter_id: ch0001
+title: "第一章：起风"
+---
+
+# 第一章：起风
+
+正文段落 A。
+`,
+      );
+
+      const tool = createNovelExportTool({ projectRoot: rootDir, config });
+      const output = await executeTool(tool, {
+        rootDir,
+        format: "md",
+        outputDir: "export",
+        title: "测试书",
+        includeFrontmatter: false,
+        writeFile: true,
+      } satisfies NovelExportArgs);
+
+      const json = extractResultJson(String(output)) as NovelExportResultJson;
+      expect(json.version).toBe(1);
+      if (json.version !== 1) throw new Error("Expected version=1 export result");
+
+      expect(json.preflight?.enabled).toBeTrue();
+      expect(json.preflight?.blocked).toBeTrue();
+      expect(json.preflight?.reports.structureReportPath).toContain("STRUCTURE_REPORT.md");
+      expect(json.diagnostics.some((item) => item.code === "EXPORT_PREFLIGHT_BLOCKED")).toBeTrue();
+
+      const structureReportAbs = path.join(
+        rootDir,
+        String(json.preflight?.reports.structureReportPath).replaceAll("/", path.sep),
+      );
+      expect(existsSync(structureReportAbs)).toBeTrue();
+    });
+  });
+
   it("applies configured manuscript docx template", async () => {
     await withTempDir(async (rootDir) => {
       const config = NovelConfigSchema.parse({

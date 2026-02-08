@@ -1,5 +1,5 @@
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { extname, join, resolve } from "node:path";
+import { statSync } from "node:fs";
+import { join, resolve } from "node:path";
 import type { NovelConfig } from "../../config/schema";
 import type { Diagnostic } from "../../shared/errors/diagnostics";
 import { toRelativePosixPath } from "../../shared/fs/paths";
@@ -7,6 +7,21 @@ import { readTextFileSync } from "../../shared/fs/read";
 import { writeTextFile } from "../../shared/fs/write";
 import { createSha256Hex } from "../../shared/hashing/sha256";
 import { parseFrontmatter } from "../../shared/markdown/frontmatter";
+import {
+  buildCachedMaps,
+  compileNamingPattern,
+  isPlainObject,
+  listEntityMarkdownFiles,
+  loadScanCache,
+  parseChapterScenes,
+  parseChapterStructure,
+  reportUnknownManuscriptDirs,
+  type SceneFieldName,
+  toStringArray,
+  validateChapterReferences,
+  validateIdAgainstPattern,
+  validateUniqueness,
+} from "./helpers";
 import type {
   ChapterEntity,
   CharacterEntity,
@@ -20,176 +35,7 @@ import type {
   ThreadEntity,
 } from "./types";
 
-function listMarkdownFiles(dir: string, options?: { sortLocale?: string }): string[] {
-  if (!existsSync(dir)) return [];
-  const stack: string[] = [dir];
-  const files: string[] = [];
-
-  while (stack.length > 0) {
-    const current = stack.pop();
-    if (!current) continue;
-
-    const entries = readdirSync(current, { withFileTypes: true });
-    for (const entry of entries) {
-      const abs = join(current, entry.name);
-      if (entry.isDirectory()) {
-        // Common convention: treat dot-dirs as private/metadata and skip them.
-        if (entry.name.startsWith(".")) continue;
-        stack.push(abs);
-        continue;
-      }
-
-      if (!entry.isFile()) continue;
-      const ext = extname(entry.name).toLowerCase();
-      if (ext !== ".md") continue;
-      files.push(abs);
-    }
-  }
-
-  return files.sort((a, b) => a.localeCompare(b, options?.sortLocale));
-}
-
-function loadScanCache(cachePath: string): ScanCacheV1 | null {
-  if (!existsSync(cachePath)) return null;
-  try {
-    const raw = readFileSync(cachePath, "utf8");
-    const parsed = JSON.parse(raw) as unknown;
-    if (!parsed || typeof parsed !== "object") return null;
-    const maybe = parsed as Partial<ScanCacheV1>;
-    if (maybe.version !== 1) return null;
-    return maybe as ScanCacheV1;
-  } catch {
-    return null;
-  }
-}
-
-function buildCachedMaps(cache: ScanCacheV1 | null): {
-  fileByPath: Map<string, NovelFileHash>;
-  chapterByPath: Map<string, ChapterEntity>;
-  characterByPath: Map<string, CharacterEntity>;
-  threadByPath: Map<string, ThreadEntity>;
-  factionByPath: Map<string, FactionEntity>;
-  locationByPath: Map<string, LocationEntity>;
-  perFileDiagnostics: Map<string, Diagnostic[]>;
-} {
-  const fileByPath = new Map<string, NovelFileHash>();
-  const chapterByPath = new Map<string, ChapterEntity>();
-  const characterByPath = new Map<string, CharacterEntity>();
-  const threadByPath = new Map<string, ThreadEntity>();
-  const factionByPath = new Map<string, FactionEntity>();
-  const locationByPath = new Map<string, LocationEntity>();
-  const perFileDiagnostics = new Map<string, Diagnostic[]>();
-
-  if (!cache) {
-    return {
-      fileByPath,
-      chapterByPath,
-      characterByPath,
-      threadByPath,
-      factionByPath,
-      locationByPath,
-      perFileDiagnostics,
-    };
-  }
-
-  for (const file of cache.files ?? []) {
-    fileByPath.set(file.path, file);
-  }
-  for (const entity of cache.entities?.chapters ?? []) {
-    chapterByPath.set(entity.path, entity);
-  }
-  for (const entity of cache.entities?.characters ?? []) {
-    characterByPath.set(entity.path, entity);
-  }
-  for (const entity of cache.entities?.threads ?? []) {
-    threadByPath.set(entity.path, entity);
-  }
-  for (const entity of cache.entities?.factions ?? []) {
-    factionByPath.set(entity.path, entity);
-  }
-  for (const entity of cache.entities?.locations ?? []) {
-    locationByPath.set(entity.path, entity);
-  }
-
-  const cachedPerFile = cache.__internal?.perFileDiagnostics ?? {};
-  for (const [path, list] of Object.entries(cachedPerFile)) {
-    if (Array.isArray(list)) {
-      perFileDiagnostics.set(path, list as Diagnostic[]);
-    }
-  }
-
-  return {
-    fileByPath,
-    chapterByPath,
-    characterByPath,
-    threadByPath,
-    factionByPath,
-    locationByPath,
-    perFileDiagnostics,
-  };
-}
-
-function validateUniqueness(
-  diagnostics: Diagnostic[],
-  items: Array<{ id: string; path: string }>,
-  code: string,
-) {
-  const seen = new Map<string, string>();
-  for (const item of items) {
-    const prev = seen.get(item.id);
-    if (prev) {
-      diagnostics.push({
-        severity: "error",
-        code,
-        message: `ID 重复: ${item.id}`,
-        evidence: [{ file: prev }, { file: item.path }],
-        suggestedFix: "请重命名其中一个文件的 id，并重新运行 /novel-index。",
-      });
-    } else {
-      seen.set(item.id, item.path);
-    }
-  }
-}
-
-function compileNamingPattern(options: {
-  diagnostics: Diagnostic[];
-  kind: string;
-  pattern: string;
-  strictMode: boolean;
-}): RegExp | null {
-  try {
-    return new RegExp(options.pattern);
-  } catch {
-    options.diagnostics.push({
-      severity: options.strictMode ? "error" : "warn",
-      code: "SCAN_NAMING_PATTERN_INVALID",
-      message: `命名规则正则无效 (${options.kind}): ${options.pattern}`,
-      suggestedFix: "请修复 .opencode/novel.jsonc 中 naming.*Pattern 的正则表达式。",
-    });
-    return null;
-  }
-}
-
-function validateIdAgainstPattern(options: {
-  diagnostics: Diagnostic[];
-  kind: string;
-  id: string;
-  file: string;
-  pattern: RegExp | null;
-  patternSource: string;
-  strictMode: boolean;
-}) {
-  if (!options.pattern) return;
-  if (options.pattern.test(options.id)) return;
-  options.diagnostics.push({
-    severity: options.strictMode ? "error" : "warn",
-    code: "SCAN_ID_PATTERN_MISMATCH",
-    message: `${options.kind} id 不符合命名规则: ${options.id}`,
-    file: options.file,
-    suggestedFix: `请将 id 调整为匹配 ${options.patternSource}，或在 .opencode/novel.jsonc 中更新 naming.*Pattern。`,
-  });
-}
-
+/** Scan manuscript entities, validate references, and persist incremental cache. */
 export function scanNovelProject(deps: {
   projectRoot: string;
   config: NovelConfig;
@@ -219,6 +65,18 @@ export function scanNovelProject(deps: {
   };
 
   const sortLocale = deps.config.index.stableSortLocale;
+  const structureEnabled = deps.config.structure.enabled ?? true;
+  const sceneEnabled = deps.config.scene.enabled ?? true;
+  const sceneRequiredFields = new Set<SceneFieldName>(
+    (deps.config.scene.required_fields ?? ["scene_id", "objective", "conflict", "outcome"]).filter(
+      (field): field is SceneFieldName =>
+        field === "scene_id" ||
+        field === "objective" ||
+        field === "conflict" ||
+        field === "outcome" ||
+        field === "hook",
+    ),
+  );
 
   const chapterIdPatternSource = deps.config.naming.chapterIdPattern;
   const characterIdPatternSource = deps.config.naming.characterIdPattern;
@@ -257,34 +115,9 @@ export function scanNovelProject(deps: {
     strictMode,
   });
 
-  const expectedSubdirs = new Set([
-    "chapters",
-    "characters",
-    "threads",
-    "factions",
-    "locations",
-    "bible",
-    "snapshots",
-  ]);
-  if (existsSync(manuscriptDir)) {
-    const entries = readdirSync(manuscriptDir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
-      if (expectedSubdirs.has(entry.name)) continue;
-      diagnostics.push({
-        severity: "info",
-        code: "SCAN_UNKNOWN_DIR",
-        message: `未知目录已忽略: ${entry.name}`,
-        file: toRelativePosixPath(rootDir, join(manuscriptDir, entry.name)),
-      });
-    }
-  }
-
-  const chapterFiles = listMarkdownFiles(join(manuscriptDir, "chapters"), { sortLocale });
-  const characterFiles = listMarkdownFiles(join(manuscriptDir, "characters"), { sortLocale });
-  const threadFiles = listMarkdownFiles(join(manuscriptDir, "threads"), { sortLocale });
-  const factionFiles = listMarkdownFiles(join(manuscriptDir, "factions"), { sortLocale });
-  const locationFiles = listMarkdownFiles(join(manuscriptDir, "locations"), { sortLocale });
+  reportUnknownManuscriptDirs({ manuscriptDir, rootDir, diagnostics });
+  const { chapterFiles, characterFiles, threadFiles, factionFiles, locationFiles } =
+    listEntityMarkdownFiles(manuscriptDir, { sortLocale });
 
   const perFileDiagnostics = new Map<string, Diagnostic[]>();
 
@@ -429,27 +262,30 @@ export function scanNovelProject(deps: {
                 typeof data.timeline.location === "string" ? data.timeline.location : undefined,
             }
           : undefined,
-        characters: Array.isArray(data.characters)
-          ? (data.characters.filter((x) => typeof x === "string") as string[])
-          : undefined,
-        factions: Array.isArray(data.factions)
-          ? (data.factions.filter((x) => typeof x === "string") as string[])
-          : undefined,
-        locations: Array.isArray(data.locations)
-          ? (data.locations.filter((x) => typeof x === "string") as string[])
-          : undefined,
-        threads_opened: Array.isArray(data.threads_opened)
-          ? (data.threads_opened.filter((x) => typeof x === "string") as string[])
-          : undefined,
-        threads_advanced: Array.isArray(data.threads_advanced)
-          ? (data.threads_advanced.filter((x) => typeof x === "string") as string[])
-          : undefined,
-        threads_closed: Array.isArray(data.threads_closed)
-          ? (data.threads_closed.filter((x) => typeof x === "string") as string[])
-          : undefined,
+        characters: toStringArray(data.characters),
+        factions: toStringArray(data.factions),
+        locations: toStringArray(data.locations),
+        threads_opened: toStringArray(data.threads_opened),
+        threads_advanced: toStringArray(data.threads_advanced),
+        threads_closed: toStringArray(data.threads_closed),
         summary: typeof data.summary === "string" ? data.summary : undefined,
-        tags: Array.isArray(data.tags)
-          ? (data.tags.filter((x) => typeof x === "string") as string[])
+        tags: toStringArray(data.tags),
+        structure: structureEnabled
+          ? parseChapterStructure({
+              raw: data.structure,
+              file: relPath,
+              strictMode,
+              diagnostics,
+            })
+          : undefined,
+        scenes: sceneEnabled
+          ? parseChapterScenes({
+              raw: data.scenes,
+              file: relPath,
+              strictMode,
+              requiredFields: sceneRequiredFields,
+              diagnostics,
+            })
           : undefined,
       };
       chapters.push(entity);
@@ -639,69 +475,15 @@ export function scanNovelProject(deps: {
   const definedFactions = new Set(factions.map((f) => f.id));
   const definedLocations = new Set(locations.map((l) => l.id));
 
-  for (const chapter of chapters) {
-    for (const charId of chapter.characters ?? []) {
-      if (!definedCharacters.has(charId)) {
-        diagnostics.push({
-          severity: strictMode ? "error" : "warn",
-          code: "SCAN_REF_CHARACTER_UNDEFINED",
-          message: `章节引用了未定义角色: ${charId}`,
-          file: chapter.path,
-          suggestedFix: `创建 manuscript/characters/${charId}.md 或从 chapters/${chapter.chapter_id}.md 中移除该引用。`,
-        });
-      }
-    }
-
-    for (const factionId of chapter.factions ?? []) {
-      if (!definedFactions.has(factionId)) {
-        diagnostics.push({
-          severity: strictMode ? "warn" : "info",
-          code: "SCAN_REF_FACTION_UNDEFINED",
-          message: `章节引用了未定义势力: ${factionId}`,
-          file: chapter.path,
-          suggestedFix: `创建 manuscript/factions/${factionId}.md 或从 chapters/${chapter.chapter_id}.md 中移除该引用。`,
-        });
-      }
-    }
-
-    for (const locationId of chapter.locations ?? []) {
-      if (!definedLocations.has(locationId)) {
-        diagnostics.push({
-          severity: strictMode ? "warn" : "info",
-          code: "SCAN_REF_LOCATION_UNDEFINED",
-          message: `章节引用了未定义地点: ${locationId}`,
-          file: chapter.path,
-          suggestedFix: `创建 manuscript/locations/${locationId}.md 或从 chapters/${chapter.chapter_id}.md 中移除该引用。`,
-        });
-      }
-    }
-    for (const threadId of [
-      ...(chapter.threads_opened ?? []),
-      ...(chapter.threads_advanced ?? []),
-      ...(chapter.threads_closed ?? []),
-    ]) {
-      if (!definedThreads.has(threadId)) {
-        diagnostics.push({
-          severity: strictMode ? "warn" : "info",
-          code: "SCAN_REF_THREAD_UNDEFINED",
-          message: `章节引用了未定义线程: ${threadId}`,
-          file: chapter.path,
-          suggestedFix: `创建 manuscript/threads/${threadId}.md 或从 chapters/${chapter.chapter_id}.md 中移除该引用。`,
-        });
-      }
-    }
-
-    const locationId = chapter.timeline?.location;
-    if (locationId && !definedLocations.has(locationId)) {
-      diagnostics.push({
-        severity: strictMode ? "warn" : "info",
-        code: "SCAN_REF_LOCATION_UNDEFINED",
-        message: `章节引用了未定义地点(timeline.location): ${locationId}`,
-        file: chapter.path,
-        suggestedFix: `创建 manuscript/locations/${locationId}.md 或更新 timeline.location。`,
-      });
-    }
-  }
+  validateChapterReferences({
+    diagnostics,
+    chapters,
+    strictMode,
+    definedCharacters,
+    definedThreads,
+    definedFactions,
+    definedLocations,
+  });
 
   const durationMs = Date.now() - startedAt;
   const stats = {
@@ -746,10 +528,7 @@ export function scanNovelProject(deps: {
   return { result, cacheToWrite };
 }
 
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
+/** Load incremental scan cache or run scan and return normalized result payload. */
 export function loadOrScan(deps: {
   projectRoot: string;
   config: NovelConfig;

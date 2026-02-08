@@ -4,7 +4,15 @@ export type NovelExportFormat = "md" | "html" | "epub" | "docx";
 export type NovelChapterOrder = "by_id" | "by_timeline" | "custom";
 export type NovelDocxTemplate = "default" | "manuscript";
 
-export type NovelExportPreflightCheck = "index" | "continuity" | "foreshadowing" | "style";
+export type NovelExportPreflightCheck =
+  | "index"
+  | "continuity"
+  | "foreshadowing"
+  | "style"
+  | "structure"
+  | "scene"
+  | "arc"
+  | "pacing";
 export type NovelExportPreflightFailOn = "error" | "warn";
 
 export type NovelExportArgs = {
@@ -34,6 +42,10 @@ export type NovelExportPreflightSummary = {
     continuityReportPath?: string;
     foreshadowingReportPath?: string;
     styleReportPath?: string;
+    structureReportPath?: string;
+    sceneReportPath?: string;
+    arcReportPath?: string;
+    pacingReportPath?: string;
   };
 };
 

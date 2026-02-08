@@ -17,6 +17,20 @@ export type NovelFileHash = {
   sha256: string;
 };
 
+export type ChapterStructureEntity = {
+  act?: number;
+  beat_id?: string;
+  beat_goal?: string;
+};
+
+export type ChapterSceneEntity = {
+  scene_id?: string;
+  objective?: string;
+  conflict?: string;
+  outcome?: string;
+  hook?: string;
+};
+
 export type ChapterEntity = {
   chapter_id: string;
   title?: string;
@@ -31,6 +45,8 @@ export type ChapterEntity = {
   threads_closed?: string[];
   summary?: string;
   tags?: string[];
+  structure?: ChapterStructureEntity;
+  scenes?: ChapterSceneEntity[];
 };
 
 export type CharacterEntity = { id: string; name?: string; path: string; alias?: string[] };

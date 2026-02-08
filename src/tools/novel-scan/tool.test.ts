@@ -23,6 +23,19 @@ timeline:
   start: "20:00"
   end: "20:30"
   location: loc-town
+structure:
+  act: 1
+  beat_id: setup
+  beat_goal: "建立主角危机"
+scenes:
+  - scene_id: ch0001-s01
+    objective: "拿到关键线索"
+    conflict: "被守卫阻拦"
+    outcome: "线索到手但身份暴露"
+  - scene_id: ch0001-s02
+    objective: "暂时脱身"
+    conflict: "城门封锁"
+    outcome: "成功脱身，埋下追兵"
 characters: [char-zhangsan, char-lisi]
 threads_opened: [th-001]
 threads_advanced: []
@@ -122,6 +135,9 @@ name: "镇口"
       expect(json.entities.chapters.length).toBe(2);
       expect(json.entities.characters.length).toBe(2);
       expect(json.entities.threads.length).toBe(1);
+      expect(json.entities.chapters[0].structure?.beat_id).toBe("setup");
+      expect(json.entities.chapters[0].scenes?.length).toBe(2);
+      expect(json.entities.chapters[0].scenes?.[0]?.scene_id).toBe("ch0001-s01");
 
       const cachePath = path.join(rootDir, ".opencode", "novel", "cache", "scan.json");
       expect(existsSync(cachePath)).toBeTrue();
