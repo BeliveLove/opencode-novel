@@ -1,5 +1,6 @@
 pre-push:
   commands:
+    code-rules:
+      run: bun run check:code-rules
     check:
       run: bun run check
-
