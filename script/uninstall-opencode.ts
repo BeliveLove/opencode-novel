@@ -19,6 +19,12 @@ type Options = {
   removeConfig: boolean;
 };
 
+function printExitHintAndExit(): never {
+  console.log("[uninstall-opencode] command finished. Exiting now.");
+  console.log("[uninstall-opencode] if the prompt does not return, press Enter once.");
+  process.exit(0);
+}
+
 function parseArgs(argv: string[]): Options {
   const options: Options = {
     target: "global",
@@ -315,6 +321,7 @@ function main() {
   if (skippedSkills.length > 0) {
     console.log(`- skipped skills: ${skippedSkills.length} (use --force to delete)`);
   }
+  printExitHintAndExit();
 }
 
 main();

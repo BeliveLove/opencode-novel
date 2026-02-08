@@ -27,6 +27,12 @@ type UninstallOptions = {
   removeConfig: boolean;
 };
 
+function printExitHintAndExit(): never {
+  console.log("[opencode-novel] command finished. Exiting now.");
+  console.log("[opencode-novel] if the prompt does not return, press Enter once.");
+  process.exit(0);
+}
+
 function printRootHelpAndExit(): never {
   console.log(
     `
@@ -513,9 +519,13 @@ function main(): void {
   const [command, ...rest] = process.argv.slice(2);
   if (!command) printRootHelpAndExit();
 
-  if (command === "install") runInstall(rest);
-  else if (command === "uninstall") runUninstall(rest);
-  else if (command === "help" || command === "--help" || command === "-h") printRootHelpAndExit();
+  if (command === "install") {
+    runInstall(rest);
+    printExitHintAndExit();
+  } else if (command === "uninstall") {
+    runUninstall(rest);
+    printExitHintAndExit();
+  } else if (command === "help" || command === "--help" || command === "-h") printRootHelpAndExit();
   else {
     console.error(`[opencode-novel] unknown command: ${command}`);
     printRootHelpAndExit();

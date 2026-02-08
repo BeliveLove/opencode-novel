@@ -19,6 +19,12 @@ type Options = {
   disableCompatTools: boolean;
 };
 
+function printExitHintAndExit(): never {
+  console.log("[install-opencode] command finished. Exiting now.");
+  console.log("[install-opencode] if the prompt does not return, press Enter once.");
+  process.exit(0);
+}
+
 function parseArgs(argv: string[]): Options {
   const options: Options = {
     target: "global",
@@ -222,6 +228,7 @@ function main() {
   console.log(`- commands: ${commandsDir}`);
   console.log(`- skills: ${skillDir}`);
   console.log(`- config: ${novelConfigPath}`);
+  printExitHintAndExit();
 }
 
 main();
