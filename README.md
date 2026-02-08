@@ -40,6 +40,67 @@ bun run script/install-opencode.ts -- --target=global
 /novel-export docx
 ```
 
+## 安装指南（npm 全局）
+
+适用于“直接使用发布包”的场景（不从源码构建）。
+
+### 1) 安装 Bun（必需）
+
+`opencode-novel` 的 CLI 通过 `bun` 运行，请先安装 Bun 并确保终端可执行：
+
+```bash
+bun --version
+```
+
+Windows 建议使用官方安装方式（确保有 `bun.exe`），安装后重启终端。
+
+### 2) 全局安装插件 CLI
+
+```bash
+npm i -g opencode-novel
+```
+
+验证命令可用：
+
+```bash
+opencode-novel --help
+```
+
+### 3) 安装到 OpenCode（全局配置）
+
+```bash
+opencode-novel install --target=global
+```
+
+成功后会输出 `install done`，并写入以下目录：
+
+- `~/.config/opencode/plugins/opencode-novel.js`
+- `~/.config/opencode/commands`
+- `~/.config/opencode/skill`
+- `~/.config/opencode/novel.jsonc`
+
+安装完成后请重启 OpenCode。
+
+### 4) 卸载（可选）
+
+先从 OpenCode 配置中移除：
+
+```bash
+opencode-novel uninstall --target=global
+```
+
+再卸载全局 npm 包：
+
+```bash
+npm uninstall -g opencode-novel
+```
+
+### 5) 常见问题（Windows）
+
+- **PowerShell 提示 `bun.exe` 找不到**：通常是 Bun 安装方式导致 PATH 中只有 `bun.cmd`。请安装官方 Bun 并重启终端。
+- **命令执行后看起来“卡住”**：若输出已出现 `[opencode-novel] install done`，通常已完成；按一次回车确认提示符是否返回。
+- **`cmd` 正常、PowerShell 异常**：可先使用 `opencode-novel.cmd install --target=global` 作为临时方案。
+
 ## 输出协议（对接方）
 
 所有 `/novel-*` 工具命令统一输出四段：
