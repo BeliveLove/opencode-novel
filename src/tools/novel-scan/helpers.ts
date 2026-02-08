@@ -32,7 +32,7 @@ export type EntityMarkdownFiles = {
   locationFiles: string[];
 };
 
-/** Recursively list markdown files under a directory with deterministic sorting. */
+/** 递归列出目录下的 Markdown 文件，并按稳定顺序排序。 */
 export function listMarkdownFiles(dir: string, options?: { sortLocale?: string }): string[] {
   if (!existsSync(dir)) return [];
   const stack: string[] = [dir];
@@ -61,7 +61,7 @@ export function listMarkdownFiles(dir: string, options?: { sortLocale?: string }
   return files.sort((a, b) => a.localeCompare(b, options?.sortLocale));
 }
 
-/** Resolve canonical manuscript entity directories into markdown file lists. */
+/** 解析 manuscript 标准实体目录并返回对应 Markdown 文件列表。 */
 export function listEntityMarkdownFiles(
   manuscriptDir: string,
   options?: { sortLocale?: string },
@@ -75,7 +75,7 @@ export function listEntityMarkdownFiles(
   };
 }
 
-/** Emit diagnostics for unknown first-level directories under manuscript root. */
+/** 对 manuscript 根目录下的未知一级目录输出诊断信息。 */
 export function reportUnknownManuscriptDirs(options: {
   manuscriptDir: string;
   rootDir: string;
@@ -105,7 +105,7 @@ export function reportUnknownManuscriptDirs(options: {
   }
 }
 
-/** Read and validate incremental scan cache. */
+/** 读取并校验增量扫描缓存。 */
 export function loadScanCache(cachePath: string): ScanCacheV1 | null {
   if (!existsSync(cachePath)) return null;
   try {
@@ -120,7 +120,7 @@ export function loadScanCache(cachePath: string): ScanCacheV1 | null {
   }
 }
 
-/** Build fast lookup maps from scan cache payload. */
+/** 基于扫描缓存构建快速查找映射。 */
 export function buildCachedMaps(cache: ScanCacheV1 | null): CachedMaps {
   const maps: CachedMaps = {
     fileByPath: new Map<string, NovelFileHash>(),
@@ -163,7 +163,7 @@ export function buildCachedMaps(cache: ScanCacheV1 | null): CachedMaps {
   return maps;
 }
 
-/** Validate duplicated ids within an entity set. */
+/** 校验实体集合中的重复 ID。 */
 export function validateUniqueness(
   diagnostics: Diagnostic[],
   items: Array<{ id: string; path: string }>,
@@ -186,7 +186,7 @@ export function validateUniqueness(
   }
 }
 
-/** Compile configured naming regex and report invalid pattern as diagnostic. */
+/** 编译配置中的命名正则，并在无效时输出诊断。 */
 export function compileNamingPattern(options: {
   diagnostics: Diagnostic[];
   kind: string;
@@ -206,7 +206,7 @@ export function compileNamingPattern(options: {
   }
 }
 
-/** Validate an entity id against configured naming rule. */
+/** 使用配置命名规则校验实体 ID。 */
 export function validateIdAgainstPattern(options: {
   diagnostics: Diagnostic[];
   kind: string;
@@ -227,21 +227,21 @@ export function validateIdAgainstPattern(options: {
   });
 }
 
-/** Normalize unknown value into trimmed non-empty string. */
+/** 将未知值规范化为去首尾空白后的非空字符串。 */
 function normalizeNonEmptyString(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;
   const trimmed = value.trim();
   return trimmed.length > 0 ? trimmed : undefined;
 }
 
-/** Convert unknown array-like value into string array. */
+/** 将未知数组值转换为字符串数组。 */
 export function toStringArray(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const values = value.filter((x): x is string => typeof x === "string");
   return values.length > 0 ? values : [];
 }
 
-/** Parse act index from number/string into positive integer. */
+/** 将数值/字符串形式的 act 解析为正整数。 */
 function parseActValue(value: unknown): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) {
     const integer = Math.trunc(value);
@@ -257,7 +257,7 @@ function parseActValue(value: unknown): number | undefined {
   return undefined;
 }
 
-/** Parse chapter structure metadata from frontmatter payload. */
+/** 从 frontmatter 解析章节结构元数据。 */
 export function parseChapterStructure(options: {
   raw: unknown;
   file: string;
@@ -324,7 +324,7 @@ export type SceneFieldName = keyof Pick<
   "scene_id" | "objective" | "conflict" | "outcome" | "hook"
 >;
 
-/** Parse chapter scenes metadata and emit scene-level diagnostics. */
+/** 解析章节 scenes 元数据并输出场景级诊断。 */
 export function parseChapterScenes(options: {
   raw: unknown;
   file: string;
@@ -415,7 +415,7 @@ export function parseChapterScenes(options: {
   return scenes;
 }
 
-/** Validate chapter cross-entity references against defined ids. */
+/** 基于已定义实体 ID 校验章节中的跨实体引用。 */
 export function validateChapterReferences(options: {
   diagnostics: Diagnostic[];
   chapters: ChapterEntity[];
@@ -491,7 +491,7 @@ export function validateChapterReferences(options: {
   }
 }
 
-/** Determine whether a value is a plain object (excluding arrays). */
+/** 判断值是否为普通对象（排除数组）。 */
 export function isPlainObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }

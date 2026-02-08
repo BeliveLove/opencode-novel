@@ -29,10 +29,12 @@ type ChapterHeadingHit = {
   warnings: string[];
 };
 
+/** 生成当前时刻的 UTC ISO 时间戳。 */
 function toUtcIsoNow(): string {
   return new Date().toISOString();
 }
 
+/** 深度遍历目录并收集文件列表，同时在目录层级做排除裁剪。 */
 function walkFiles(
   root: string,
   options: { excludeMatchers: Array<(p: string) => boolean> },
@@ -60,14 +62,17 @@ function walkFiles(
   return result;
 }
 
+/** 将 glob 模式编译成可复用的匹配函数。 */
 function compileMatchers(globs: string[]): Array<(p: string) => boolean> {
   return globs.map((g) => picomatch(g, { dot: true }));
 }
 
+/** 判断路径是否命中任意匹配器。 */
 function isMatchedAny(matchers: Array<(p: string) => boolean>, relPosixPath: string): boolean {
   return matchers.some((m) => m(relPosixPath));
 }
 
+/** 从正文行中识别章节标题并返回命中结果。 */
 function detectChaptersFromContent(options: {
   lines: string[];
   strongPatterns: RegExp[];
@@ -132,6 +137,38 @@ function detectChaptersFromContent(options: {
   return hits;
 }
 
+/** 当正文未识别到章节标题时，尝试使用文件名作为章节标题来源。 */
+function detectChapterFromFilename(options: {
+  fileStem: string;
+  strongPatterns: RegExp[];
+}): ChapterHeadingHit | null {
+  const fileStem = options.fileStem.trim();
+  if (fileStem.length === 0) return null;
+
+  const strong = detectChaptersFromContent({
+    lines: [fileStem],
+    strongPatterns: options.strongPatterns,
+    enableLooseAfterStrong: false,
+  });
+  if (strong.length > 0) {
+    const first = strong[0];
+    return {
+      ...first,
+      lineIndex: -1,
+      headingLine: fileStem,
+      warnings: [...first.warnings, "正文未检测到章节标题，已回退使用文件名。"],
+    };
+  }
+
+  return {
+    lineIndex: -1,
+    headingLine: fileStem,
+    title: fileStem,
+    warnings: ["正文未检测到章节标题，已回退使用文件名。"],
+  };
+}
+
+/** 基于章节编号或标题生成稳定的章节 ID。 */
 function buildChapterId(options: {
   numeric?: number;
   title: string;
@@ -152,11 +189,16 @@ function buildChapterId(options: {
   return `${options.specialPrefix}-${finalSlug}`;
 }
 
+/** 去除章节标题行，仅保留正文内容；当标题来自文件名时保留全文。 */
 function stripHeadingLine(lines: string[], headingLineIndex: number, endExclusive: number): string {
+  if (headingLineIndex < 0) {
+    return lines.join("\n").replace(/^\n+/, "").trimEnd();
+  }
   const bodyLines = lines.slice(headingLineIndex + 1, endExclusive);
   return bodyLines.join("\n").replace(/^\n+/, "").trimEnd();
 }
 
+/** 渲染导入报告 Markdown。 */
 function renderImportReport(options: {
   imported: ImportMapItem[];
   conflicts: { chapter_id: string; existing: string; written: string }[];
@@ -208,6 +250,7 @@ function renderImportReport(options: {
   return lines.join("\n");
 }
 
+/** 创建小说导入工具定义。 */
 export function createNovelImportTool(deps: {
   projectRoot: string;
   config: NovelConfig;
@@ -226,6 +269,7 @@ export function createNovelImportTool(deps: {
       writeConfigJsonc: tool.schema.boolean().optional(),
       writeReport: tool.schema.boolean().optional(),
     },
+    /** 执行导入流程：扫描源文件、识别章节并写入规范化章节文件。 */
     async execute(args: NovelImportArgs) {
       const startedAt = Date.now();
       const diagnostics: Diagnostic[] = [];
@@ -318,11 +362,21 @@ export function createNovelImportTool(deps: {
         const sourceRelRoot = toRelativePosixPath(rootDir, absPath);
         const lines = raw.replaceAll("\r\n", "\n").replaceAll("\r", "\n").split("\n");
 
-        const hits = detectChaptersFromContent({
+        let hits = detectChaptersFromContent({
           lines,
           strongPatterns,
           enableLooseAfterStrong,
         });
+
+        if (hits.length === 0) {
+          const fallbackHit = detectChapterFromFilename({
+            fileStem: path.parse(absPath).name,
+            strongPatterns,
+          });
+          if (fallbackHit) {
+            hits = [fallbackHit];
+          }
+        }
 
         if (hits.length === 0) {
           unclassified.push({ source_path: sourceRelRoot, reason: "未找到章节标题" });
@@ -346,6 +400,9 @@ export function createNovelImportTool(deps: {
 
           const title = hit.title.trim() ? hit.title.trim() : hit.headingLine.trim();
           const chapterBody = stripHeadingLine(lines, hit.lineIndex, endExclusive);
+          const sourceHeadingLine = hit.lineIndex >= 0 ? hit.lineIndex + 1 : 0;
+          const sourceStartLine = hit.lineIndex >= 0 ? hit.lineIndex + 1 : 1;
+          const sourceEndLine = hit.lineIndex >= 0 ? endExclusive : lines.length;
 
           const targetBase = path.join(rootDir, manuscriptDirName, "chapters", `${chapterId}.md`);
           const targetRel = toRelativePosixPath(rootDir, targetBase);
@@ -383,8 +440,8 @@ export function createNovelImportTool(deps: {
             title,
             source_path: sourceRelRoot,
             source_type: sourceType,
-            source_heading_line: hit.lineIndex + 1,
-            source_range: { startLine: hit.lineIndex + 1, endLine: endExclusive },
+            source_heading_line: sourceHeadingLine,
+            source_range: { startLine: sourceStartLine, endLine: sourceEndLine },
             output_path: outputPathRel,
             warnings: hit.warnings.length > 0 ? hit.warnings : undefined,
           };

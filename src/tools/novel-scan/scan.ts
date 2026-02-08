@@ -35,7 +35,7 @@ import type {
   ThreadEntity,
 } from "./types";
 
-/** Scan manuscript entities, validate references, and persist incremental cache. */
+/** 扫描 manuscript 实体、校验引用关系，并持久化增量缓存。 */
 export function scanNovelProject(deps: {
   projectRoot: string;
   config: NovelConfig;
@@ -528,7 +528,7 @@ export function scanNovelProject(deps: {
   return { result, cacheToWrite };
 }
 
-/** Load incremental scan cache or run scan and return normalized result payload. */
+/** 加载增量扫描缓存或执行扫描，并返回标准化结果。 */
 export function loadOrScan(deps: {
   projectRoot: string;
   config: NovelConfig;

@@ -81,4 +81,35 @@ describe("novel_import", () => {
       expect(outUtf16).toContain("中文");
     });
   });
+
+  it("falls back to filename when content has no chapter heading", async () => {
+    await withTempDir(async (rootDir) => {
+      const config = NovelConfigSchema.parse({ projectRoot: rootDir });
+
+      writeFixtureFile(
+        rootDir,
+        "drafts/Chapter 7 Filename Only.txt",
+        `Body line one\nBody line two\n`,
+      );
+
+      const tool = createNovelImportTool({ projectRoot: rootDir, config });
+      const output = await executeTool(tool, {
+        rootDir,
+        fromDir: rootDir,
+        mode: "copy",
+      } satisfies NovelImportArgs);
+      const json = extractResultJson(String(output)) as NovelImportResultJson;
+
+      expect(json.unclassified.length).toBe(0);
+      expect(json.writtenChapters).toContain("manuscript/chapters/ch0007.md");
+      const chapter = readFileSync(
+        path.join(rootDir, "manuscript", "chapters", "ch0007.md"),
+        "utf8",
+      );
+      expect(chapter).toContain("chapter_id: ch0007");
+      expect(chapter).toContain("title: Filename Only");
+      expect(chapter).toContain("# Filename Only");
+      expect(chapter).toContain("Body line one");
+    });
+  });
 });

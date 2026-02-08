@@ -19,7 +19,7 @@ import type {
   NovelExportPreflightSummary,
 } from "./types";
 
-/** Create a minimal tool context for local preflight execution without agent runtime. */
+/** 创建本地预检执行所需的最小工具上下文（无代理运行时）。 */
 function createFallbackToolContext(directory: string): ToolContext {
   return {
     sessionID: "local",
@@ -33,7 +33,7 @@ function createFallbackToolContext(directory: string): ToolContext {
   };
 }
 
-/** Extract JSON payload from standard markdown tool output block. */
+/** 从标准 Markdown 工具输出中提取 JSON 结果块。 */
 function extractResultJson(markdownOutput: string): unknown {
   const match = markdownOutput.match(/```json\n([\s\S]*?)\n```/);
   if (!match) {
@@ -42,7 +42,7 @@ function extractResultJson(markdownOutput: string): unknown {
   return JSON.parse(match[1]);
 }
 
-/** Count diagnostics grouped by severity. */
+/** 按严重级别统计诊断数量。 */
 function countDiagnostics(diagnostics: Diagnostic[]): {
   errors: number;
   warns: number;
@@ -59,7 +59,7 @@ function countDiagnostics(diagnostics: Diagnostic[]): {
   return { errors, warns, infos };
 }
 
-/** Decide whether preflight should block export under failOn policy. */
+/** 根据 failOn 策略判断预检是否应阻断导出。 */
 function shouldBlockPreflight(
   stats: { errors: number; warns: number },
   failOn: NovelExportPreflightFailOn,
@@ -79,7 +79,7 @@ export type RunPreflightOptions = {
   context?: ToolContext;
 };
 
-/** Run configured preflight checks and aggregate check reports. */
+/** 执行配置的预检项并汇总检查报告。 */
 export async function runPreflight(
   options: RunPreflightOptions,
 ): Promise<{ summary: NovelExportPreflightSummary | undefined; diagnostics: Diagnostic[] }> {
