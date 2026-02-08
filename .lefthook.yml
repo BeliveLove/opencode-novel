@@ -1,5 +1,7 @@
 pre-push:
   commands:
+    tag-version:
+      run: bun run check:tag-version
     code-rules:
       run: bun run check:code-rules
     check:
